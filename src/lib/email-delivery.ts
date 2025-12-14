@@ -2,21 +2,22 @@ import nodemailer from 'nodemailer';
 import { supabase, User, RankedEvent } from './supabase';
 import { EmailTemplateService } from './email-template';
 
-if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
-  throw new Error('Missing Gmail credentials. Please set GMAIL_USER and GMAIL_APP_PASSWORD');
-}
+// Gmail credentials are optional - will only error when actually sending
+const GMAIL_CONFIGURED = !!(process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD);
 
-// Create reusable transporter for Gmail SMTP
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.GMAIL_USER,
-    pass: process.env.GMAIL_APP_PASSWORD,
-  },
-});
+// Create reusable transporter for Gmail SMTP (only if configured)
+const transporter = GMAIL_CONFIGURED
+  ? nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: process.env.GMAIL_USER,
+      pass: process.env.GMAIL_APP_PASSWORD,
+    },
+  })
+  : null;
 
-const FROM_EMAIL = process.env.GMAIL_FROM_EMAIL || process.env.GMAIL_USER;
-const FEEDBACK_URL = process.env.NEXT_PUBLIC_APP_URL 
+const FROM_EMAIL = process.env.GMAIL_FROM_EMAIL || process.env.GMAIL_USER || 'noreply@example.com';
+const FEEDBACK_URL = process.env.NEXT_PUBLIC_APP_URL
   ? `${process.env.NEXT_PUBLIC_APP_URL}/api/feedback`
   : 'http://localhost:3000/api/feedback';
 
@@ -38,7 +39,7 @@ export class EmailDeliveryService {
       try {
         await this.sendPersonalizedEmail(userId, events);
         successCount++;
-        
+
         // Rate limiting: wait 100ms between sends
         await this.sleep(100);
       } catch (error) {
@@ -78,6 +79,9 @@ export class EmailDeliveryService {
 
     try {
       // Send email via Gmail SMTP
+      if (!transporter) {
+        throw new Error('Gmail not configured. Set GMAIL_USER and GMAIL_APP_PASSWORD to send emails.');
+      }
       await transporter.sendMail(mailOptions);
 
       // Log success
@@ -123,6 +127,9 @@ export class EmailDeliveryService {
       html: '<h1>Test Email</h1><p>This is a test email from the Event Newsletter System.</p>',
     };
 
+    if (!transporter) {
+      throw new Error('Gmail not configured. Set GMAIL_USER and GMAIL_APP_PASSWORD to send emails.');
+    }
     await transporter.sendMail(mailOptions);
     console.log(`Test email sent to ${toEmail}`);
   }
