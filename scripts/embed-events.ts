@@ -27,7 +27,7 @@ async function embedEvents() {
 
   // Read all_posts.json
   const postsPath = path.join(__dirname, '..', 'all_posts.json');
-  
+
   if (!fs.existsSync(postsPath)) {
     console.error(' all_posts.json not found!');
     process.exit(1);
@@ -45,7 +45,7 @@ async function embedEvents() {
 
   for (let i = 0; i < posts.length; i += batchSize) {
     const batch = posts.slice(i, i + batchSize);
-    console.log(`Processing batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(posts.length/batchSize)}...`);
+    console.log(`Processing batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(posts.length / batchSize)}...`);
 
     const results = await Promise.allSettled(
       batch.map(async (post) => {
@@ -57,22 +57,8 @@ async function embedEvents() {
             timestamp: post.timestamp,
           });
 
-          // Insert into events table first (if not exists)
-          const { error: eventError } = await supabase
-            .from('events')
-            .upsert({
-              id: post.id,
-              title: extractTitle(post.caption),
-              description: post.caption,
-              event_date: post.timestamp,
-              location: extractLocation(post.caption),
-              category: eventEmbedding.category,
-              source_url: post.permalink,
-            }, { onConflict: 'id' });
-
-          if (eventError) {
-            console.warn(`Warning: Could not upsert event ${post.id}: ${eventError.message}`);
-          }
+          // Skip events table upsert - Instagram IDs are not UUIDs
+          // Just store embeddings directly in event_embeddings table
 
           // Insert embedding
           const { error: embError } = await supabase
@@ -127,21 +113,21 @@ async function embedEvents() {
  */
 function extractTitle(caption: string): string {
   if (!caption) return 'Event';
-  
+
   // Get first non-empty line
   const lines = caption.split('\n').filter(l => l.trim().length > 0);
   if (lines.length === 0) return 'Event';
-  
+
   let title = lines[0];
-  
+
   // Remove leading emojis
   title = title.replace(/^[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\s]+/gu, '');
-  
+
   // Truncate
   if (title.length > 200) {
     title = title.substring(0, 200) + '...';
   }
-  
+
   return title || 'Event';
 }
 
@@ -150,7 +136,7 @@ function extractTitle(caption: string): string {
  */
 function extractLocation(caption: string): string | null {
   if (!caption) return null;
-  
+
   // Look for location patterns
   const locationPatterns = [
     / \s*([^\n]+)/i,
@@ -158,14 +144,14 @@ function extractLocation(caption: string): string | null {
     /Where:\s*([^\n]+)/i,
     /at\s+([\w\s,]+(?:Building|Room|Theatre|Hall|Level|Melbourne|Campus)[\w\s,]*)/i,
   ];
-  
+
   for (const pattern of locationPatterns) {
     const match = caption.match(pattern);
     if (match) {
       return match[1].trim();
     }
   }
-  
+
   return null;
 }
 
@@ -180,7 +166,7 @@ async function printCategoryDistribution() {
   if (!embeddings) return;
 
   const distribution: Record<string, number> = {};
-  
+
   for (const emb of embeddings) {
     const cat = emb.category || 'uncategorized';
     distribution[cat] = (distribution[cat] || 0) + 1;
