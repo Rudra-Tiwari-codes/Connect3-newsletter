@@ -1,0 +1,1097 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Category-Based Email Previews - Local Test</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 40px 20px;
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    h1 {
+      color: white;
+      text-align: center;
+      margin-bottom: 20px;
+      font-size: 36px;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+    }
+    .meta {
+      background: rgba(255,255,255,0.9);
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 40px;
+      text-align: center;
+    }
+    .meta h2 { color: #667eea; margin-bottom: 10px; }
+    .meta p { color: #666; line-height: 1.6; }
+    .email-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(600px, 1fr));
+      gap: 30px;
+    }
+    .email-container {
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      transition: transform 0.3s ease;
+    }
+    .email-container:hover {
+      transform: translateY(-5px);
+    }
+    .email-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px;
+      text-align: center;
+    }
+    .email-header h2 {
+      margin: 0;
+      font-size: 24px;
+    }
+    .email-header p {
+      margin: 8px 0 0 0;
+      opacity: 0.9;
+      font-size: 14px;
+    }
+    iframe {
+      width: 100%;
+      height: 900px;
+      border: none;
+      display: block;
+    }
+    .stats {
+      background: rgba(255,255,255,0.95);
+      padding: 30px;
+      border-radius: 12px;
+      margin-top: 40px;
+      text-align: center;
+    }
+    .stats h2 { color: #667eea; margin-bottom: 20px; }
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-top: 20px;
+    }
+    .stat-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px;
+      border-radius: 8px;
+    }
+    .stat-card .value {
+      font-size: 36px;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    .stat-card .label {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎯 Category-Based Email System</h1>
+    
+    <div class="meta">
+      <h2>Local Test Preview</h2>
+      <p><strong>Generated:</strong> 14/12/2025, 6:35:37 pm</p>
+      <p><strong>System:</strong> Category-Based Recommendations (3 events from 3 categories)</p>
+      <p><strong>Users:</strong> 3 test users</p>
+      <p><strong>Total Recommendations:</strong> 9 events</p>
+    </div>
+    
+    <div class="email-grid">
+      
+        <div class="email-container">
+          <div class="email-header">
+            <h2>📧 Alex Chen</h2>
+            <p>alex.chen@student.unimelb.edu.au</p>
+            <p>Interests: Hackathon, Tech Workshop, Programming Competition</p>
+          </div>
+          <iframe srcdoc="
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset=&quot;utf-8&quot;>
+  <meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot;>
+  <meta http-equiv=&quot;Content-Type&quot; content=&quot;text/html; charset=UTF-8&quot;>
+  <title>Alex Chen, check out these 3 must-see events!</title>
+</head>
+<body style=&quot;margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, &#39;Segoe UI&#39;, Roboto, &#39;Helvetica Neue&#39;, Arial, sans-serif; background: #f7fafc;&quot;>
+  <table cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; border=&quot;0&quot; width=&quot;100%&quot; style=&quot;background: #f7fafc; padding: 40px 20px;&quot;>
+    <tr>
+      <td align=&quot;center&quot;>
+        <table cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; border=&quot;0&quot; width=&quot;600&quot; style=&quot;max-width: 600px;&quot;>
+          
+          <!-- Header -->
+          <tr>
+            <td style=&quot;background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 32px; text-align: center; border-radius: 12px 12px 0 0;&quot;>
+              <h1 style=&quot;margin: 0; color: white; font-size: 28px; font-weight: bold;&quot;>
+                Connect3
+              </h1>
+              <p style=&quot;margin: 8px 0 0 0; color: rgba(255,255,255,0.9); font-size: 16px;&quot;>
+                Your Personalized Event Newsletter
+              </p>
+            </td>
+          </tr>
+
+          <!-- Greeting -->
+          <tr>
+            <td style=&quot;background: white; padding: 24px 32px 16px 32px;&quot;>
+              <h2 style=&quot;margin: 0 0 8px 0; color: #2d3748; font-size: 24px;&quot;>
+                Hi Alex Chen! 👋
+              </h2>
+              <p style=&quot;margin: 0; color: #4a5568; font-size: 16px; line-height: 1.6;&quot;>
+                We&#39;ve analyzed your interests and handpicked <strong>3 events from 3 different categories</strong> just for you. Each event is ranked based on how well it matches your preferences!
+              </p>
+            </td>
+          </tr>
+
+          <!-- Event Cards -->
+          <tr>
+            <td style=&quot;background: white; padding: 0 32px 32px 32px;&quot;>
+              <table cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; border=&quot;0&quot; width=&quot;100%&quot;>
+                
+      <tr>
+        <td style=&quot;padding: 20px 0;&quot;>
+          <table cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; border=&quot;0&quot; width=&quot;100%&quot; style=&quot;background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);&quot;>
+            <tr>
+              <td style=&quot;padding: 24px;&quot;>
+                <!-- Rank Badge -->
+                <table cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; border=&quot;0&quot; width=&quot;100%&quot;>
+                  <tr>
+                    <td style=&quot;padding-bottom: 12px;&quot;>
+                      <span style=&quot;background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold;&quot;>🥇 Top Pick</span>
+                      <span style=&quot;margin-left: 8px; font-size: 20px;&quot;>💻</span>
+                      <span style=&quot;margin-left: 8px; color: #666; font-size: 13px;&quot;>Hackathon</span>
+                    </td>
+                  </tr>
+                </table>
+
+                <!-- Event Title -->
+                <h2 style=&quot;margin: 16px 0 12px 0; font-size: 22px; color: #2d3748; line-height: 1.3;&quot;>
+                  AWS Cloud Hackathon 2025
+                </h2>
+
+                <!-- Club Name -->
+                
+                <p style=&quot;margin: 0 0 12px 0; color: #667eea; font-size: 14px; font-weight: 600;&quot;>
+                  📍 AWS Cloud Club
+                </p>
+                
+
+                <!-- Reason -->
+                <div style=&quot;background: #f7fafc; padding: 12px; border-radius: 8px; margin-bottom: 16px; border-left: 3px solid #667eea;&quot;>
+                  <p style=&quot;margin: 0; color: #4a5568; font-size: 14px; font-style: italic;&quot;>
+                    💡 Based on your history, Hackathon events are your top match!
+                  </p>
+                </div>
+
+                <!-- Description -->
+                <p style=&quot;margin: 0 0 16px 0; color: #4a5568; font-size: 15px; line-height: 1.6;&quot;>
+                  Build scalable cloud solutions in 24 hours! Teams will compete to create innovative applications using AWS services. Prizes include internship opportunities and AWS credits. Beginners welcome with men...
+                </p>
+
+                <!-- Event Details -->
+                <table cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; border=&quot;0&quot; width=&quot;100%&quot; style=&quot;margin-bottom: 20px;&quot;>
+                  <tr>
+                    <td style=&quot;padding: 8px 0; border-top: 1px solid #e2e8f0;&quot;>
+                      <table cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; border=&quot;0&quot;>
+                        <tr>
+                          <td style=&quot;padding-right: 20px;&quot;>
+                            <span style=&quot;color: #718096; font-size: 13px;&quot;>📅 Saturday 15 March 2025</span>
+                          </td>
+                          <td>
+                            <span style=&quot;color: #718096; font-size: 13px;&quot;>📍 Melbourne Connect, Level 3</span>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+
+                <!-- Action Buttons -->
+                <table cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; border=&quot;0&quot; width=&quot;100%&quot;>
+                  <tr>
+                    <td style=&quot;text-align: center;&quot;>
+                      <table cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; border=&quot;0&quot; style=&quot;display: inline-block;&quot;>
+                        <tr>
+                          <!-- View Event Button -->
+                          <td style=&quot;padding-right: 8px;&quot;>
+                            <a href=&quot;https://unimelb.edu.au/events/aws-hackathon&quot; style=&quot;display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 14px;&quot;>
+                              View Event →
+                            </a>
+                          </td>
+                          <!-- Like Button -->
+                          <td style=&quot;padding-right: 8px;&quot;>
+                            <a href=&quot;http://localhost:3000/api/feedback?uid=user-1&eid=event-1&action=like&quot; style=&quot;display: inline-block; background: #48bb78; color: white; padding: 12px 16px; text-decoration: none; border-radius: 6px; font-size: 14px;&quot;>
+                              👍 Interested
+                            </a>
+                          </td>
+                          <!-- Dislike Button -->
+                          <td>
+                            <a href=&quot;http://localhost:3000/api/feedback?uid=user-1&eid=event-1&action=dislike&quot; style=&quot;display: inline-block; background: #f56565; color: white; padding: 12px 16px; text-decoration: none; border-radius: 6px; font-size: 14px;&quot;>
+                              👎 Not for me
+                            </a>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    
+      <tr>
+        <td style=&quot;padding: 20px 0;&quot;>
+          <table cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; border=&quot;0&quot; width=&quot;100%&quot; style=&quot;background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);&quot;>
+            <tr>
+              <td style=&quot;padding: 24px;&quot;>
+                <!-- Rank Badge -->
+                <table cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; border=&quot;0&quot; width=&quot;100%&quot;>
+                  <tr>
+                    <td style=&quot;padding-bottom: 12px;&quot;>
+                      <span style=&quot;background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold;&quot;>🥈 Second Choice</span>
+                      <span style=&quot;margin-left: 8px; font-size: 20px;&quot;>💻</span>
+                      <span style=&quot;margin-left: 8px; color: #666; font-size: 13px;&quot;>Tech Workshop</span>
+                    </td>
+                  </tr>
+                </table>
+
+                <!-- Event Title -->
+                <h2 style=&quot;margin: 16px 0 12px 0; font-size: 22px; color: #2d3748; line-height: 1.3;&quot;>
+                  Blockchain Development Workshop
+                </h2>
+
+                <!-- Club Name -->
+                
+                <p style=&quot;margin: 0 0 12px 0; color: #667eea; font-size: 14px; font-weight: 600;&quot;>
+                  📍 Blockchain Association
+                </p>
+                
+
+                <!-- Reason -->
+                <div style=&quot;background: #f7fafc; padding: 12px; border-radius: 8px; margin-bottom: 16px; border-left: 3px solid #667eea;&quot;>
+                  <p style=&quot;margin: 0; color: #4a5568; font-size: 14px; font-style: italic;&quot;>
+                    💡 You&#39;ve shown interest in Tech Workshop events before.
+                  </p>
+                </div>
+
+                <!-- Description -->
+                <p style=&quot;margin: 0 0 16px 0; color: #4a5568; font-size: 15px; line-height: 1.6;&quot;>
+                  Learn to build decentralized applications (dApps) on Ethereum. Hands-on coding session covering smart contracts, Web3.js, and Solidity fundamentals. Laptop required.
+                </p>
+
+                <!-- Event Details -->
+                <table cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; border=&quot;0&quot; width=&quot;100%&quot; style=&quot;margin-bottom: 20px;&quot;>
+                  <tr>
+                    <td style=&quot;padding: 8px 0; border-top: 1px solid #e2e8f0;&quot;>
+                      <table cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; border=&quot;0&quot;>
+                        <tr>
+                          <td style=&quot;padding-right: 20px;&quot;>
+                            <span style=&quot;color: #718096; font-size: 13px;&quot;>📅 Sunday 23 March 2025</span>
+                          </td>
+                          <td>
+                            <span style=&quot;color: #718096; font-size: 13px;&quot;>📍 Engineering Building, Room 301</span>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+
+                <!-- Action Buttons -->
+                <table cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; border=&quot;0&quot; width=&quot;100%&quot;>
+                  <tr>
+                    <td style=&quot;text-align: center;&quot;>
+                      <table cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; border=&quot;0&quot; style=&quot;display: inline-block;&quot;>
+                        <tr>
+                          <!-- View Event Button -->
+                          <td style=&quot;padding-right: 8px;&quot;>
+                            <a href=&quot;https://unimelb.edu.au/events/blockchain-workshop&quot; style=&quot;display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 14px;&quot;>
+                              View Event →
+                            </a>
+                          </td>
+                          <!-- Like Button -->
+                          <td style=&quot;padding-right: 8px;&quot;>
+                            <a href=&quot;http://localhost:3000/api/feedback?uid=user-1&eid=event-4&action=like&quot; style=&quot;display: inline-block; background: #48bb78; color: white; padding: 12px 16px; text-decoration: none; border-radius: 6px; font-size: 14px;&quot;>
+                              👍 Interested
+                            </a>
+                          </td>
+                          <!-- Dislike Button -->
+                          <td>
+                            <a href=&quot;http://localhost:3000/api/feedback?uid=user-1&eid=event-4&action=dislike&quot; style=&quot;display: inline-block; background: #f56565; color: white; padding: 12px 16px; text-decoration: none; border-radius: 6px; font-size: 14px;&quot;>
+                              👎 Not for me
+                            </a>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    
+      <tr>
+        <td style=&quot;padding: 20px 0;&quot;>
+          <table cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; border=&quot;0&quot; width=&quot;100%&quot; style=&quot;background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);&quot;>
+            <tr>
+              <td style=&quot;padding: 24px;&quot;>
+                <!-- Rank Badge -->
+                <table cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; border=&quot;0&quot; width=&quot;100%&quot;>
+                  <tr>
+                    <td style=&quot;padding-bottom: 12px;&quot;>
+                      <span style=&quot;background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold;&quot;>🥉 Third Choice</span>
+                      <span style=&quot;margin-left: 8px; font-size: 20px;&quot;>💻</span>
+                      <span style=&quot;margin-left: 8px; color: #666; font-size: 13px;&quot;>Programming Competition</span>
+                    </td>
+                  </tr>
+                </table>
+
+                <!-- Event Title -->
+                <h2 style=&quot;margin: 16px 0 12px 0; font-size: 22px; color: #2d3748; line-height: 1.3;&quot;>
+                  ARES Rocket Design Competition
+                </h2>
+
+                <!-- Club Name -->
+                
+                <p style=&quot;margin: 0 0 12px 0; color: #667eea; font-size: 14px; font-weight: 600;&quot;>
+                  📍 Aerospace and Rocket Engineering Society
+                </p>
+                
+
+                <!-- Reason -->
+                <div style=&quot;background: #f7fafc; padding: 12px; border-radius: 8px; margin-bottom: 16px; border-left: 3px solid #667eea;&quot;>
+                  <p style=&quot;margin: 0; color: #4a5568; font-size: 14px; font-style: italic;&quot;>
+                    💡 Exploring Programming Competition events - you might enjoy this!
+                  </p>
+                </div>
+
+                <!-- Description -->
+                <p style=&quot;margin: 0 0 16px 0; color: #4a5568; font-size: 15px; line-height: 1.6;&quot;>
+                  Design and build model rockets for our annual competition! Teams will present designs, build prototypes, and launch at the final event. Engineering students from all disciplines welcome.
+                </p>
+
+                <!-- Event Details -->
+                <table cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; border=&quot;0&quot; width=&quot;100%&quot; style=&quot;margin-bottom: 20px;&quot;>
+                  <tr>
+                    <td style=&quot;padding: 8px 0; border-top: 1px solid #e2e8f0;&quot;>
+                      <table cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; border=&quot;0&quot;>
+                        <tr>
+                          <td style=&quot;padding-right: 20px;&quot;>
+                            <span style=&quot;color: #718096; font-size: 13px;&quot;>📅 Thursday 10 April 2025</span>
+                          </td>
+                          <td>
+                            <span style=&quot;color: #718096; font-size: 13px;&quot;>📍 Werribee Launch Site</span>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+
+                <!-- Action Buttons -->
+                <table cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; border=&quot;0&quot; width=&quot;100%&quot;>
+                  <tr>
+                    <td style=&quot;text-align: center;&quot;>
+                      <table cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; border=&quot;0&quot; style=&quot;display: inline-block;&quot;>
+                        <tr>
+                          <!-- View Event Button -->
+                          <td style=&quot;padding-right: 8px;&quot;>
+                            <a href=&quot;https://unimelb.edu.au/events/rocket-competition&quot; style=&quot;display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 14px;&quot;>
+                              View Event →
+                            </a>
+                          </td>
+                          <!-- Like Button -->
+                          <td style=&quot;padding-right: 8px;&quot;>
+                            <a href=&quot;http://localhost:3000/api/feedback?uid=user-1&eid=event-7&action=like&quot; style=&quot;display: inline-block; background: #48bb78; color: white; padding: 12px 16px; text-decoration: none; border-radius: 6px; font-size: 14px;&quot;>
+                              👍 Interested
+                            </a>
+                          </td>
+                          <!-- Dislike Button -->
+                          <td>
+                            <a href=&quot;http://localhost:3000/api/feedback?uid=user-1&eid=event-7&action=dislike&quot; style=&quot;display: inline-block; background: #f56565; color: white; padding: 12px 16px; text-decoration: none; border-radius: 6px; font-size: 14px;&quot;>
+                              👎 Not for me
+                            </a>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    
+              </table>
+            </td>
+          </tr>
+
+          <!-- How It Works Section -->
+          <tr>
+            <td style=&quot;background: #edf2f7; padding: 24px 32px; border-radius: 0 0 12px 12px;&quot;>
+              <h3 style=&quot;margin: 0 0 16px 0; color: #2d3748; font-size: 18px;&quot;>
+                📊 How This Works
+              </h3>
+              <ul style=&quot;margin: 0; padding-left: 20px; color: #4a5568; font-size: 14px; line-height: 1.8;&quot;>
+                <li><strong>Ranked Categories:</strong> We use Naive Bayes classification to rank event categories based on your click history and feedback.</li>
+                <li><strong>Diverse Selection:</strong> We pick the top event from your 3 highest-ranked categories to ensure variety.</li>
+                <li><strong>Learning System:</strong> Click &quot;Interested&quot; or &quot;Not for me&quot; to help us learn your preferences better!</li>
+                <li><strong>Category Clusters:</strong> Once you consistently choose events from the same category, we&#39;ll group you with similar users for even better recommendations.</li>
+              </ul>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style=&quot;padding: 24px 0; text-align: center;&quot;>
+              <p style=&quot;margin: 0 0 8px 0; color: #718096; font-size: 13px;&quot;>
+                Not enjoying these recommendations?
+              </p>
+              <p style=&quot;margin: 0; color: #718096; font-size: 13px;&quot;>
+                <a href=&quot;#&quot; style=&quot;color: #667eea; text-decoration: none;&quot;>Update preferences</a> | 
+                <a href=&quot;#&quot; style=&quot;color: #667eea; text-decoration: none;&quot;>Unsubscribe</a>
+              </p>
+              <p style=&quot;margin: 16px 0 0 0; color: #a0aec0; font-size: 12px;&quot;>
+                © 2025 Connect3 by DSCubed @ University of Melbourne
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  "></iframe>
+        </div>
+        
+
+        <div class="email-container">
+          <div class="email-header">
+            <h2>📧 Sarah Williams</h2>
+            <p>sarah.williams@student.unimelb.edu.au</p>
+            <p>Interests: Career & Networking, Industry Talk, Recruitment</p>
+          </div>
+          <iframe srcdoc="
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset=&quot;utf-8&quot;>
+  <meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot;>
+  <meta http-equiv=&quot;Content-Type&quot; content=&quot;text/html; charset=UTF-8&quot;>
+  <title>Sarah Williams&#39;s personalized event picks are here!</title>
+</head>
+<body style=&quot;margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, &#39;Segoe UI&#39;, Roboto, &#39;Helvetica Neue&#39;, Arial, sans-serif; background: #f7fafc;&quot;>
+  <table cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; border=&quot;0&quot; width=&quot;100%&quot; style=&quot;background: #f7fafc; padding: 40px 20px;&quot;>
+    <tr>
+      <td align=&quot;center&quot;>
+        <table cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; border=&quot;0&quot; width=&quot;600&quot; style=&quot;max-width: 600px;&quot;>
+          
+          <!-- Header -->
+          <tr>
+            <td style=&quot;background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 32px; text-align: center; border-radius: 12px 12px 0 0;&quot;>
+              <h1 style=&quot;margin: 0; color: white; font-size: 28px; font-weight: bold;&quot;>
+                Connect3
+              </h1>
+              <p style=&quot;margin: 8px 0 0 0; color: rgba(255,255,255,0.9); font-size: 16px;&quot;>
+                Your Personalized Event Newsletter
+              </p>
+            </td>
+          </tr>
+
+          <!-- Greeting -->
+          <tr>
+            <td style=&quot;background: white; padding: 24px 32px 16px 32px;&quot;>
+              <h2 style=&quot;margin: 0 0 8px 0; color: #2d3748; font-size: 24px;&quot;>
+                Hi Sarah Williams! 👋
+              </h2>
+              <p style=&quot;margin: 0; color: #4a5568; font-size: 16px; line-height: 1.6;&quot;>
+                We&#39;ve analyzed your interests and handpicked <strong>3 events from 3 different categories</strong> just for you. Each event is ranked based on how well it matches your preferences!
+              </p>
+            </td>
+          </tr>
+
+          <!-- Event Cards -->
+          <tr>
+            <td style=&quot;background: white; padding: 0 32px 32px 32px;&quot;>
+              <table cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; border=&quot;0&quot; width=&quot;100%&quot;>
+                
+      <tr>
+        <td style=&quot;padding: 20px 0;&quot;>
+          <table cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; border=&quot;0&quot; width=&quot;100%&quot; style=&quot;background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);&quot;>
+            <tr>
+              <td style=&quot;padding: 24px;&quot;>
+                <!-- Rank Badge -->
+                <table cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; border=&quot;0&quot; width=&quot;100%&quot;>
+                  <tr>
+                    <td style=&quot;padding-bottom: 12px;&quot;>
+                      <span style=&quot;background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold;&quot;>🥇 Top Pick</span>
+                      <span style=&quot;margin-left: 8px; font-size: 20px;&quot;>💼</span>
+                      <span style=&quot;margin-left: 8px; color: #666; font-size: 13px;&quot;>Career & Networking</span>
+                    </td>
+                  </tr>
+                </table>
+
+                <!-- Event Title -->
+                <h2 style=&quot;margin: 16px 0 12px 0; font-size: 22px; color: #2d3748; line-height: 1.3;&quot;>
+                  Investment Banking Career Panel
+                </h2>
+
+                <!-- Club Name -->
+                
+                <p style=&quot;margin: 0 0 12px 0; color: #667eea; font-size: 14px; font-weight: 600;&quot;>
+                  📍 Australian Wall Street
+                </p>
+                
+
+                <!-- Reason -->
+                <div style=&quot;background: #f7fafc; padding: 12px; border-radius: 8px; margin-bottom: 16px; border-left: 3px solid #667eea;&quot;>
+                  <p style=&quot;margin: 0; color: #4a5568; font-size: 14px; font-style: italic;&quot;>
+                    💡 Based on your history, Career & Networking events are your top match!
+                  </p>
+                </div>
+
+                <!-- Description -->
+                <p style=&quot;margin: 0 0 16px 0; color: #4a5568; font-size: 15px; line-height: 1.6;&quot;>
+                  Hear from analysts and associates at top investment banks including Goldman Sachs, JP Morgan, and Macquarie. Q&A session followed by networking with pizza and drinks.
+                </p>
+
+                <!-- Event Details -->
+                <table cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; border=&quot;0&quot; width=&quot;100%&quot; style=&quot;margin-bottom: 20px;&quot;>
+                  <tr>
+                    <td style=&quot;padding: 8px 0; border-top: 1px solid #e2e8f0;&quot;>
+                      <table cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; border=&quot;0&quot;>
+                        <tr>
+                          <td style=&quot;padding-right: 20px;&quot;>
+                            <span style=&quot;color: #718096; font-size: 13px;&quot;>📅 Wednesday 19 March 2025</span>
+                          </td>
+                          <td>
+                            <span style=&quot;color: #718096; font-size: 13px;&quot;>📍 Commerce Building, Theatre 2</span>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+
+                <!-- Action Buttons -->
+                <table cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; border=&quot;0&quot; width=&quot;100%&quot;>
+                  <tr>
+                    <td style=&quot;text-align: center;&quot;>
+                      <table cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; border=&quot;0&quot; style=&quot;display: inline-block;&quot;>
+                        <tr>
+                          <!-- View Event Button -->
+                          <td style=&quot;padding-right: 8px;&quot;>
+                            <a href=&quot;https://unimelb.edu.au/events/ib-panel&quot; style=&quot;display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 14px;&quot;>
+                              View Event →
+                            </a>
+                          </td>
+                          <!-- Like Button -->
+                          <td style=&quot;padding-right: 8px;&quot;>
+                            <a href=&quot;http://localhost:3000/api/feedback?uid=user-2&eid=event-2&action=like&quot; style=&quot;display: inline-block; background: #48bb78; color: white; padding: 12px 16px; text-decoration: none; border-radius: 6px; font-size: 14px;&quot;>
+                              👍 Interested
+                            </a>
+                          </td>
+                          <!-- Dislike Button -->
+                          <td>
+                            <a href=&quot;http://localhost:3000/api/feedback?uid=user-2&eid=event-2&action=dislike&quot; style=&quot;display: inline-block; background: #f56565; color: white; padding: 12px 16px; text-decoration: none; border-radius: 6px; font-size: 14px;&quot;>
+                              👎 Not for me
+                            </a>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    
+      <tr>
+        <td style=&quot;padding: 20px 0;&quot;>
+          <table cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; border=&quot;0&quot; width=&quot;100%&quot; style=&quot;background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);&quot;>
+            <tr>
+              <td style=&quot;padding: 24px;&quot;>
+                <!-- Rank Badge -->
+                <table cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; border=&quot;0&quot; width=&quot;100%&quot;>
+                  <tr>
+                    <td style=&quot;padding-bottom: 12px;&quot;>
+                      <span style=&quot;background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold;&quot;>🥈 Second Choice</span>
+                      <span style=&quot;margin-left: 8px; font-size: 20px;&quot;>💼</span>
+                      <span style=&quot;margin-left: 8px; color: #666; font-size: 13px;&quot;>Industry Talk</span>
+                    </td>
+                  </tr>
+                </table>
+
+                <!-- Event Title -->
+                <h2 style=&quot;margin: 16px 0 12px 0; font-size: 22px; color: #2d3748; line-height: 1.3;&quot;>
+                  Startup Founder Fireside Chat
+                </h2>
+
+                <!-- Club Name -->
+                
+                <p style=&quot;margin: 0 0 12px 0; color: #667eea; font-size: 14px; font-weight: 600;&quot;>
+                  📍 BusinessOne Consulting
+                </p>
+                
+
+                <!-- Reason -->
+                <div style=&quot;background: #f7fafc; padding: 12px; border-radius: 8px; margin-bottom: 16px; border-left: 3px solid #667eea;&quot;>
+                  <p style=&quot;margin: 0; color: #4a5568; font-size: 14px; font-style: italic;&quot;>
+                    💡 You&#39;ve shown interest in Industry Talk events before.
+                  </p>
+                </div>
+
+                <!-- Description -->
+                <p style=&quot;margin: 0 0 16px 0; color: #4a5568; font-size: 15px; line-height: 1.6;&quot;>
+                  Meet founders of successful Melbourne startups. Hear their journey from idea to funding to scale. Topics: MVP development, pitch decks, investor relations, and resilience.
+                </p>
+
+                <!-- Event Details -->
+                <table cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; border=&quot;0&quot; width=&quot;100%&quot; style=&quot;margin-bottom: 20px;&quot;>
+                  <tr>
+                    <td style=&quot;padding: 8px 0; border-top: 1px solid #e2e8f0;&quot;>
+                      <table cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; border=&quot;0&quot;>
+                        <tr>
+                          <td style=&quot;padding-right: 20px;&quot;>
+                            <span style=&quot;color: #718096; font-size: 13px;&quot;>📅 Monday 31 March 2025</span>
+                          </td>
+                          <td>
+                            <span style=&quot;color: #718096; font-size: 13px;&quot;>📍 Melbourne Connect, Innovation Space</span>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+
+                <!-- Action Buttons -->
+                <table cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; border=&quot;0&quot; width=&quot;100%&quot;>
+                  <tr>
+                    <td style=&quot;text-align: center;&quot;>
+                      <table cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; border=&quot;0&quot; style=&quot;display: inline-block;&quot;>
+                        <tr>
+                          <!-- View Event Button -->
+                          <td style=&quot;padding-right: 8px;&quot;>
+                            <a href=&quot;https://unimelb.edu.au/events/founder-chat&quot; style=&quot;display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 14px;&quot;>
+                              View Event →
+                            </a>
+                          </td>
+                          <!-- Like Button -->
+                          <td style=&quot;padding-right: 8px;&quot;>
+                            <a href=&quot;http://localhost:3000/api/feedback?uid=user-2&eid=event-8&action=like&quot; style=&quot;display: inline-block; background: #48bb78; color: white; padding: 12px 16px; text-decoration: none; border-radius: 6px; font-size: 14px;&quot;>
+                              👍 Interested
+                            </a>
+                          </td>
+                          <!-- Dislike Button -->
+                          <td>
+                            <a href=&quot;http://localhost:3000/api/feedback?uid=user-2&eid=event-8&action=dislike&quot; style=&quot;display: inline-block; background: #f56565; color: white; padding: 12px 16px; text-decoration: none; border-radius: 6px; font-size: 14px;&quot;>
+                              👎 Not for me
+                            </a>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    
+              </table>
+            </td>
+          </tr>
+
+          <!-- How It Works Section -->
+          <tr>
+            <td style=&quot;background: #edf2f7; padding: 24px 32px; border-radius: 0 0 12px 12px;&quot;>
+              <h3 style=&quot;margin: 0 0 16px 0; color: #2d3748; font-size: 18px;&quot;>
+                📊 How This Works
+              </h3>
+              <ul style=&quot;margin: 0; padding-left: 20px; color: #4a5568; font-size: 14px; line-height: 1.8;&quot;>
+                <li><strong>Ranked Categories:</strong> We use Naive Bayes classification to rank event categories based on your click history and feedback.</li>
+                <li><strong>Diverse Selection:</strong> We pick the top event from your 3 highest-ranked categories to ensure variety.</li>
+                <li><strong>Learning System:</strong> Click &quot;Interested&quot; or &quot;Not for me&quot; to help us learn your preferences better!</li>
+                <li><strong>Category Clusters:</strong> Once you consistently choose events from the same category, we&#39;ll group you with similar users for even better recommendations.</li>
+              </ul>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style=&quot;padding: 24px 0; text-align: center;&quot;>
+              <p style=&quot;margin: 0 0 8px 0; color: #718096; font-size: 13px;&quot;>
+                Not enjoying these recommendations?
+              </p>
+              <p style=&quot;margin: 0; color: #718096; font-size: 13px;&quot;>
+                <a href=&quot;#&quot; style=&quot;color: #667eea; text-decoration: none;&quot;>Update preferences</a> | 
+                <a href=&quot;#&quot; style=&quot;color: #667eea; text-decoration: none;&quot;>Unsubscribe</a>
+              </p>
+              <p style=&quot;margin: 16px 0 0 0; color: #a0aec0; font-size: 12px;&quot;>
+                © 2025 Connect3 by DSCubed @ University of Melbourne
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  "></iframe>
+        </div>
+        
+
+        <div class="email-container">
+          <div class="email-header">
+            <h2>📧 Jordan Lee</h2>
+            <p>jordan.lee@student.unimelb.edu.au</p>
+            <p>Interests: Social Event, Cultural Event, Food & Dining</p>
+          </div>
+          <iframe srcdoc="
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset=&quot;utf-8&quot;>
+  <meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot;>
+  <meta http-equiv=&quot;Content-Type&quot; content=&quot;text/html; charset=UTF-8&quot;>
+  <title>Jordan Lee, we found 3 events you&#39;ll love!</title>
+</head>
+<body style=&quot;margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, &#39;Segoe UI&#39;, Roboto, &#39;Helvetica Neue&#39;, Arial, sans-serif; background: #f7fafc;&quot;>
+  <table cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; border=&quot;0&quot; width=&quot;100%&quot; style=&quot;background: #f7fafc; padding: 40px 20px;&quot;>
+    <tr>
+      <td align=&quot;center&quot;>
+        <table cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; border=&quot;0&quot; width=&quot;600&quot; style=&quot;max-width: 600px;&quot;>
+          
+          <!-- Header -->
+          <tr>
+            <td style=&quot;background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 32px; text-align: center; border-radius: 12px 12px 0 0;&quot;>
+              <h1 style=&quot;margin: 0; color: white; font-size: 28px; font-weight: bold;&quot;>
+                Connect3
+              </h1>
+              <p style=&quot;margin: 8px 0 0 0; color: rgba(255,255,255,0.9); font-size: 16px;&quot;>
+                Your Personalized Event Newsletter
+              </p>
+            </td>
+          </tr>
+
+          <!-- Greeting -->
+          <tr>
+            <td style=&quot;background: white; padding: 24px 32px 16px 32px;&quot;>
+              <h2 style=&quot;margin: 0 0 8px 0; color: #2d3748; font-size: 24px;&quot;>
+                Hi Jordan Lee! 👋
+              </h2>
+              <p style=&quot;margin: 0; color: #4a5568; font-size: 16px; line-height: 1.6;&quot;>
+                We&#39;ve analyzed your interests and handpicked <strong>3 events from 3 different categories</strong> just for you. Each event is ranked based on how well it matches your preferences!
+              </p>
+            </td>
+          </tr>
+
+          <!-- Event Cards -->
+          <tr>
+            <td style=&quot;background: white; padding: 0 32px 32px 32px;&quot;>
+              <table cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; border=&quot;0&quot; width=&quot;100%&quot;>
+                
+      <tr>
+        <td style=&quot;padding: 20px 0;&quot;>
+          <table cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; border=&quot;0&quot; width=&quot;100%&quot; style=&quot;background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);&quot;>
+            <tr>
+              <td style=&quot;padding: 24px;&quot;>
+                <!-- Rank Badge -->
+                <table cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; border=&quot;0&quot; width=&quot;100%&quot;>
+                  <tr>
+                    <td style=&quot;padding-bottom: 12px;&quot;>
+                      <span style=&quot;background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold;&quot;>🥈 Second Choice</span>
+                      <span style=&quot;margin-left: 8px; font-size: 20px;&quot;>🎉</span>
+                      <span style=&quot;margin-left: 8px; color: #666; font-size: 13px;&quot;>Cultural Event</span>
+                    </td>
+                  </tr>
+                </table>
+
+                <!-- Event Title -->
+                <h2 style=&quot;margin: 16px 0 12px 0; font-size: 22px; color: #2d3748; line-height: 1.3;&quot;>
+                  Bollywood Night: Dance & Dine
+                </h2>
+
+                <!-- Club Name -->
+                
+                <p style=&quot;margin: 0 0 12px 0; color: #667eea; font-size: 14px; font-weight: 600;&quot;>
+                  📍 Bollywood Club
+                </p>
+                
+
+                <!-- Reason -->
+                <div style=&quot;background: #f7fafc; padding: 12px; border-radius: 8px; margin-bottom: 16px; border-left: 3px solid #667eea;&quot;>
+                  <p style=&quot;margin: 0; color: #4a5568; font-size: 14px; font-style: italic;&quot;>
+                    💡 You&#39;ve shown interest in Cultural Event events before.
+                  </p>
+                </div>
+
+                <!-- Description -->
+                <p style=&quot;margin: 0 0 16px 0; color: #4a5568; font-size: 15px; line-height: 1.6;&quot;>
+                  Celebrate Indian culture with Bollywood dance performances, traditional food, and henna art. DJ playing latest hits. Dress in your best ethnic wear for a costume contest!
+                </p>
+
+                <!-- Event Details -->
+                <table cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; border=&quot;0&quot; width=&quot;100%&quot; style=&quot;margin-bottom: 20px;&quot;>
+                  <tr>
+                    <td style=&quot;padding: 8px 0; border-top: 1px solid #e2e8f0;&quot;>
+                      <table cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; border=&quot;0&quot;>
+                        <tr>
+                          <td style=&quot;padding-right: 20px;&quot;>
+                            <span style=&quot;color: #718096; font-size: 13px;&quot;>📅 Friday 21 March 2025</span>
+                          </td>
+                          <td>
+                            <span style=&quot;color: #718096; font-size: 13px;&quot;>📍 Union House, Whitley Hall</span>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+
+                <!-- Action Buttons -->
+                <table cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; border=&quot;0&quot; width=&quot;100%&quot;>
+                  <tr>
+                    <td style=&quot;text-align: center;&quot;>
+                      <table cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; border=&quot;0&quot; style=&quot;display: inline-block;&quot;>
+                        <tr>
+                          <!-- View Event Button -->
+                          <td style=&quot;padding-right: 8px;&quot;>
+                            <a href=&quot;https://unimelb.edu.au/events/bollywood-night&quot; style=&quot;display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 14px;&quot;>
+                              View Event →
+                            </a>
+                          </td>
+                          <!-- Like Button -->
+                          <td style=&quot;padding-right: 8px;&quot;>
+                            <a href=&quot;http://localhost:3000/api/feedback?uid=user-3&eid=event-3&action=like&quot; style=&quot;display: inline-block; background: #48bb78; color: white; padding: 12px 16px; text-decoration: none; border-radius: 6px; font-size: 14px;&quot;>
+                              👍 Interested
+                            </a>
+                          </td>
+                          <!-- Dislike Button -->
+                          <td>
+                            <a href=&quot;http://localhost:3000/api/feedback?uid=user-3&eid=event-3&action=dislike&quot; style=&quot;display: inline-block; background: #f56565; color: white; padding: 12px 16px; text-decoration: none; border-radius: 6px; font-size: 14px;&quot;>
+                              👎 Not for me
+                            </a>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    
+      <tr>
+        <td style=&quot;padding: 20px 0;&quot;>
+          <table cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; border=&quot;0&quot; width=&quot;100%&quot; style=&quot;background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);&quot;>
+            <tr>
+              <td style=&quot;padding: 24px;&quot;>
+                <!-- Rank Badge -->
+                <table cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; border=&quot;0&quot; width=&quot;100%&quot;>
+                  <tr>
+                    <td style=&quot;padding-bottom: 12px;&quot;>
+                      <span style=&quot;background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold;&quot;>🥉 Third Choice</span>
+                      <span style=&quot;margin-left: 8px; font-size: 20px;&quot;>🎉</span>
+                      <span style=&quot;margin-left: 8px; color: #666; font-size: 13px;&quot;>Food & Dining</span>
+                    </td>
+                  </tr>
+                </table>
+
+                <!-- Event Title -->
+                <h2 style=&quot;margin: 16px 0 12px 0; font-size: 22px; color: #2d3748; line-height: 1.3;&quot;>
+                  Bubble Tea Crawl: Exploring Melbourne CBD
+                </h2>
+
+                <!-- Club Name -->
+                
+                <p style=&quot;margin: 0 0 12px 0; color: #667eea; font-size: 14px; font-weight: 600;&quot;>
+                  📍 Bubble Tea Society
+                </p>
+                
+
+                <!-- Reason -->
+                <div style=&quot;background: #f7fafc; padding: 12px; border-radius: 8px; margin-bottom: 16px; border-left: 3px solid #667eea;&quot;>
+                  <p style=&quot;margin: 0; color: #4a5568; font-size: 14px; font-style: italic;&quot;>
+                    💡 Exploring Food & Dining events - you might enjoy this!
+                  </p>
+                </div>
+
+                <!-- Description -->
+                <p style=&quot;margin: 0 0 16px 0; color: #4a5568; font-size: 15px; line-height: 1.6;&quot;>
+                  Visit 5 of Melbourne&#39;s best bubble tea shops in one afternoon! Vote for your favorite flavors, make new friends, and get exclusive discounts at each location.
+                </p>
+
+                <!-- Event Details -->
+                <table cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; border=&quot;0&quot; width=&quot;100%&quot; style=&quot;margin-bottom: 20px;&quot;>
+                  <tr>
+                    <td style=&quot;padding: 8px 0; border-top: 1px solid #e2e8f0;&quot;>
+                      <table cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; border=&quot;0&quot;>
+                        <tr>
+                          <td style=&quot;padding-right: 20px;&quot;>
+                            <span style=&quot;color: #718096; font-size: 13px;&quot;>📅 Monday 17 March 2025</span>
+                          </td>
+                          <td>
+                            <span style=&quot;color: #718096; font-size: 13px;&quot;>📍 Meet at State Library Steps</span>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+
+                <!-- Action Buttons -->
+                <table cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; border=&quot;0&quot; width=&quot;100%&quot;>
+                  <tr>
+                    <td style=&quot;text-align: center;&quot;>
+                      <table cellpadding=&quot;0&quot; cellspacing=&quot;0&quot; border=&quot;0&quot; style=&quot;display: inline-block;&quot;>
+                        <tr>
+                          <!-- View Event Button -->
+                          <td style=&quot;padding-right: 8px;&quot;>
+                            <a href=&quot;https://unimelb.edu.au/events/bbt-crawl&quot; style=&quot;display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 14px;&quot;>
+                              View Event →
+                            </a>
+                          </td>
+                          <!-- Like Button -->
+                          <td style=&quot;padding-right: 8px;&quot;>
+                            <a href=&quot;http://localhost:3000/api/feedback?uid=user-3&eid=event-6&action=like&quot; style=&quot;display: inline-block; background: #48bb78; color: white; padding: 12px 16px; text-decoration: none; border-radius: 6px; font-size: 14px;&quot;>
+                              👍 Interested
+                            </a>
+                          </td>
+                          <!-- Dislike Button -->
+                          <td>
+                            <a href=&quot;http://localhost:3000/api/feedback?uid=user-3&eid=event-6&action=dislike&quot; style=&quot;display: inline-block; background: #f56565; color: white; padding: 12px 16px; text-decoration: none; border-radius: 6px; font-size: 14px;&quot;>
+                              👎 Not for me
+                            </a>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    
+              </table>
+            </td>
+          </tr>
+
+          <!-- How It Works Section -->
+          <tr>
+            <td style=&quot;background: #edf2f7; padding: 24px 32px; border-radius: 0 0 12px 12px;&quot;>
+              <h3 style=&quot;margin: 0 0 16px 0; color: #2d3748; font-size: 18px;&quot;>
+                📊 How This Works
+              </h3>
+              <ul style=&quot;margin: 0; padding-left: 20px; color: #4a5568; font-size: 14px; line-height: 1.8;&quot;>
+                <li><strong>Ranked Categories:</strong> We use Naive Bayes classification to rank event categories based on your click history and feedback.</li>
+                <li><strong>Diverse Selection:</strong> We pick the top event from your 3 highest-ranked categories to ensure variety.</li>
+                <li><strong>Learning System:</strong> Click &quot;Interested&quot; or &quot;Not for me&quot; to help us learn your preferences better!</li>
+                <li><strong>Category Clusters:</strong> Once you consistently choose events from the same category, we&#39;ll group you with similar users for even better recommendations.</li>
+              </ul>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style=&quot;padding: 24px 0; text-align: center;&quot;>
+              <p style=&quot;margin: 0 0 8px 0; color: #718096; font-size: 13px;&quot;>
+                Not enjoying these recommendations?
+              </p>
+              <p style=&quot;margin: 0; color: #718096; font-size: 13px;&quot;>
+                <a href=&quot;#&quot; style=&quot;color: #667eea; text-decoration: none;&quot;>Update preferences</a> | 
+                <a href=&quot;#&quot; style=&quot;color: #667eea; text-decoration: none;&quot;>Unsubscribe</a>
+              </p>
+              <p style=&quot;margin: 16px 0 0 0; color: #a0aec0; font-size: 12px;&quot;>
+                © 2025 Connect3 by DSCubed @ University of Melbourne
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  "></iframe>
+        </div>
+        
+    </div>
+    
+    <div class="stats">
+      <h2>📊 System Features</h2>
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="value">3</div>
+          <div class="label">Events per Email</div>
+        </div>
+        <div class="stat-card">
+          <div class="value">3</div>
+          <div class="label">Different Categories</div>
+        </div>
+        <div class="stat-card">
+          <div class="value">100%</div>
+          <div class="label">Diversity Rate</div>
+        </div>
+        <div class="stat-card">
+          <div class="value">$0</div>
+          <div class="label">API Costs</div>
+        </div>
+        <div class="stat-card">
+          <div class="value">&lt;100ms</div>
+          <div class="label">Generation Time</div>
+        </div>
+        <div class="stat-card">
+          <div class="value">7</div>
+          <div class="label">Category Clusters</div>
+        </div>
+      </div>
+      
+      <div style="margin-top: 30px; text-align: left;">
+        <h3 style="color: #667eea; margin-bottom: 15px;">✨ Key Features:</h3>
+        <ul style="color: #666; line-height: 2; padding-left: 20px;">
+          <li><strong>Naive Bayes Classification:</strong> Ranks categories based on user behavior</li>
+          <li><strong>Guaranteed Diversity:</strong> One event from each of 3 different categories</li>
+          <li><strong>Progressive Learning:</strong> Explores → Refines → Personalizes over time</li>
+          <li><strong>Feedback Buttons:</strong> Like/Dislike/View to train the system</li>
+          <li><strong>Category Clusters:</strong> Groups related categories (Technical, Professional, Social, etc.)</li>
+          <li><strong>Zero Costs:</strong> No API calls required, pure database queries</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+  
