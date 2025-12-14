@@ -11,6 +11,7 @@
  * Run: npm run generate-students
  */
 
+import 'dotenv/config';
 import { supabase } from '../src/lib/supabase';
 import { CONNECT3_CATEGORIES, Connect3Category } from '../src/lib/embeddings';
 
@@ -46,7 +47,7 @@ const LAST_NAMES = [
 
 const FACULTIES = [
   'Engineering',
-  'Science', 
+  'Science',
   'Business and Economics',
   'Arts',
   'Medicine, Dentistry and Health Sciences',
@@ -132,7 +133,7 @@ function generateEmail(firstName: string, lastName: string): string {
     `${firstName.toLowerCase()}.${lastName.toLowerCase()}${Math.floor(Math.random() * 100)}`,
     `${firstName[0].toLowerCase()}${lastName.toLowerCase()}`,
   ];
-  
+
   const format = formats[Math.floor(Math.random() * formats.length)];
   return `${format}@student.unimelb.edu.au`;
 }
@@ -140,20 +141,20 @@ function generateEmail(firstName: string, lastName: string): string {
 function selectPersona(): StudentPersona {
   const random = Math.random();
   let cumulative = 0;
-  
+
   for (const persona of STUDENT_PERSONAS) {
     cumulative += persona.probability;
     if (random <= cumulative) {
       return persona;
     }
   }
-  
+
   return STUDENT_PERSONAS[0];
 }
 
 function generatePreferences(interests: Connect3Category[]): Record<string, number> {
   const preferences: Record<string, number> = {};
-  
+
   // Map Connect3 categories to preference columns
   const categoryMapping: Record<string, string[]> = {
     'tech_workshop': ['tech_innovation'],
@@ -203,17 +204,17 @@ function generateStudent(): SyntheticStudent {
   const lastName = LAST_NAMES[Math.floor(Math.random() * LAST_NAMES.length)];
   const name = `${firstName} ${lastName}`;
   const email = generateEmail(firstName, lastName);
-  
+
   const year = Math.floor(Math.random() * 5) + 1; // 1-5 years
   const faculty = FACULTIES[Math.floor(Math.random() * FACULTIES.length)];
   const degrees = DEGREES[faculty as keyof typeof DEGREES] || ['General Studies'];
   const degree = degrees[Math.floor(Math.random() * degrees.length)];
 
   const persona = selectPersona();
-  
+
   // Add some variation to interests
   const interests = [...persona.interests];
-  
+
   // Maybe add 1-2 random interests
   if (Math.random() > 0.5) {
     const otherCategories = CONNECT3_CATEGORIES.filter(c => !interests.includes(c));
@@ -243,7 +244,7 @@ async function generateAndInsertStudents(count: number = 100) {
   // Generate unique students
   while (students.length < count) {
     const student = generateStudent();
-    
+
     // Ensure unique email
     if (!usedEmails.has(student.email)) {
       usedEmails.add(student.email);
@@ -344,12 +345,12 @@ async function exportToJSON() {
   if (users) {
     const fs = await import('fs');
     const path = await import('path');
-    
+
     fs.writeFileSync(
       path.join(__dirname, '..', 'synthetic_students.json'),
       JSON.stringify(users, null, 2)
     );
-    
+
     console.log('\n📁 Exported to synthetic_students.json');
   }
 }

@@ -1,4 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
+import { env } from 'process';
+
 
 // Support both naming conventions for Supabase credentials
 const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;

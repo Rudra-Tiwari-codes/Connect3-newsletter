@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { UserClusteringService } from '../src/lib/clustering';
 import { CLUSTERING_CONFIG } from '../src/lib/config';
 

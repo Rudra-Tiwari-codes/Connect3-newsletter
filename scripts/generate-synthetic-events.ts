@@ -3,6 +3,7 @@
  * Merged with best existing DSCubed events to create diverse dataset
  */
 
+import 'dotenv/config';
 import { supabase } from '../src/lib/supabase';
 import * as fs from 'fs';
 
@@ -521,12 +522,11 @@ async function generateAndInsertEvents() {
         .from('events')
         .insert({
           title: event.title,
-          description: event.description,
+          description: `[${event.club_name}] ${event.description}`,
           category: event.category,
-          club_name: event.club_name,
           event_date: new Date(event.event_date).toISOString(),
           location: event.location,
-          url: event.url,
+          source_url: event.url,
           created_at: new Date().toISOString()
         });
 

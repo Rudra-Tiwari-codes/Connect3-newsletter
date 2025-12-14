@@ -3,6 +3,7 @@
  * Tests the new Naive Bayes category-based recommendation system
  */
 
+import 'dotenv/config';
 import { categoryRecommender } from '../src/lib/category-recommender';
 import { categoryClassifier } from '../src/lib/category-classifier';
 import { generateCategoryEmail, generateCategoryEmailText } from '../src/lib/category-email-template';
@@ -158,7 +159,7 @@ ${textEmail}
     console.log(`Total users analyzed: ${users.length}`);
     console.log(`Total recommendations generated: ${users.length * 3}`);
     console.log(`Average categories per user: 3 (by design)`);
-    
+
     console.log('\n✅ Category-based recommendation demo complete!');
     console.log('\n💡 Next Steps:');
     console.log('   1. Open the HTML file in a browser to preview emails');

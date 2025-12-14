@@ -1,0 +1,82 @@
+
+═════════════════════════════════════════════════════
+USER: Alex Chen (alex.chen@student.unimelb.edu.au)
+Interests: Hackathon, Tech Workshop, Programming Competition
+═════════════════════════════════════════════════════
+
+RECOMMENDATIONS:
+
+1. [Technical Cluster] Hackathon
+   Event: AWS Cloud Hackathon 2025
+   Club: AWS Cloud Club
+   Reason: Based on your history, Hackathon events are your top match!
+   Date: 15/3/2025
+   Location: Melbourne Connect, Level 3
+
+
+2. [Technical Cluster] Tech Workshop
+   Event: Blockchain Development Workshop
+   Club: Blockchain Association
+   Reason: You've shown interest in Tech Workshop events before.
+   Date: 23/3/2025
+   Location: Engineering Building, Room 301
+
+
+3. [Technical Cluster] Programming Competition
+   Event: ARES Rocket Design Competition
+   Club: Aerospace and Rocket Engineering Society
+   Reason: Exploring Programming Competition events - you might enjoy this!
+   Date: 10/4/2025
+   Location: Werribee Launch Site
+
+    
+
+
+═════════════════════════════════════════════════════
+USER: Sarah Williams (sarah.williams@student.unimelb.edu.au)
+Interests: Career & Networking, Industry Talk, Recruitment
+═════════════════════════════════════════════════════
+
+RECOMMENDATIONS:
+
+1. [Professional Cluster] Career & Networking
+   Event: Investment Banking Career Panel
+   Club: Australian Wall Street
+   Reason: Based on your history, Career & Networking events are your top match!
+   Date: 19/3/2025
+   Location: Commerce Building, Theatre 2
+
+
+2. [Professional Cluster] Industry Talk
+   Event: Startup Founder Fireside Chat
+   Club: BusinessOne Consulting
+   Reason: You've shown interest in Industry Talk events before.
+   Date: 31/3/2025
+   Location: Melbourne Connect, Innovation Space
+
+    
+
+
+═════════════════════════════════════════════════════
+USER: Jordan Lee (jordan.lee@student.unimelb.edu.au)
+Interests: Social Event, Cultural Event, Food & Dining
+═════════════════════════════════════════════════════
+
+RECOMMENDATIONS:
+
+2. [Social Cluster] Cultural Event
+   Event: Bollywood Night: Dance & Dine
+   Club: Bollywood Club
+   Reason: You've shown interest in Cultural Event events before.
+   Date: 21/3/2025
+   Location: Union House, Whitley Hall
+
+
+3. [Social Cluster] Food & Dining
+   Event: Bubble Tea Crawl: Exploring Melbourne CBD
+   Club: Bubble Tea Society
+   Reason: Exploring Food & Dining events - you might enjoy this!
+   Date: 17/3/2025
+   Location: Meet at State Library Steps
+
+    

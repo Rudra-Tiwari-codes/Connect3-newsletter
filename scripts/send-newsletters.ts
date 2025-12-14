@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { supabase } from '@/lib/supabase';
 import { EventScoringService } from '@/lib/scoring';
 import { EmailDeliveryService } from '@/lib/email-delivery';

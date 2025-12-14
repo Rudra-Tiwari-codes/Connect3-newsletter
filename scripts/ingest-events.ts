@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { supabase } from '@/lib/supabase';
 import { EventClassifier } from '@/lib/ai-classifier';
 
