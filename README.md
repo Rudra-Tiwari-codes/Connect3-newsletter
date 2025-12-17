@@ -2,6 +2,11 @@
 
 Personalized university event newsletter system built for DSCubed at the University of Melbourne.
 
+## Documentation
+
+- Primary Python spec: `PYTHON_SYSTEM_REVIEW.md`
+- Python workflow/testing: `PYTHON_TESTING_GUIDE.md`
+
 ## Features
 
 - Category-based recommendations using Naive Bayes classification (3 diverse events per email)
@@ -14,7 +19,7 @@ Personalized university event newsletter system built for DSCubed at the Univers
 | Component | Technology |
 |-----------|------------|
 | Database | Supabase (Postgres) |
-| Backend | Next.js 14, TypeScript |
+| Backend | Python (primary), Next.js 14 / TypeScript (legacy) |
 | Embeddings | OpenAI text-embedding-3-small (1536 dims) |
 | Classification | GPT-4o-mini |
 | Email | Gmail SMTP via Nodemailer |
@@ -39,6 +44,7 @@ npm install
 cp .env.example .env
 # Set: SUPABASE_URL, SUPABASE_SERVICE_KEY, OPENAI_API_KEY, GMAIL_USER, GMAIL_APP_PASSWORD
 ```
+Never commit `.env` with real credentials. Rotate keys if they were ever shared.
 
 3. Initialize database (run in Supabase SQL Editor):
 ```
@@ -52,6 +58,8 @@ database/seed.sql  # optional
 npm run demo-category   # category-based (HTML preview)
 npm run demo            # two-tower (no DB required)
 ```
+
+For Python execution steps, follow `PYTHON_TESTING_GUIDE.md`.
 
 ## Scripts
 
