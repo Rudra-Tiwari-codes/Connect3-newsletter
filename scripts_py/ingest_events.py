@@ -1,36 +1,37 @@
-"""
-Python port of scripts/ingest-events.ts.
-Classifies uncategorized events and updates Supabase.
-"""
+"""Classify uncategorized events in Supabase using OpenAI."""
 
-from python_app.embeddings import classify_event_category
-from python_app.supabase_client import supabase
+from python_app.ai_classifier import EventClassifier
+from python_app.supabase_client import ensure_ok, supabase
 
 
 def main() -> None:
   print("Starting event ingestion and classification...")
-  resp = supabase.table("events").select("*").is_("category", None).execute()
-  events = resp.data or []
+  try:
+    resp = supabase.table("events").select("*").is_("category", None).execute()
+    ensure_ok(resp, action="select events")
+    events = resp.data or []
 
-  if not events:
-    print("No unclassified events found.")
-    return
+    if not events:
+      print("No unclassified events found.")
+      return
 
-  print(f"Found {len(events)} unclassified events")
-  success = 0
+    print(f"Found {len(events)} unclassified events")
+    classifier = EventClassifier()
+    classifications = classifier.classify_batch(events)
 
-  for event in events:
-    category = classify_event_category(event.get("description") or event.get("title") or "")
-    if not category:
-      print(f"Skipping event {event.get('id')}: could not classify")
-      continue
-    update_resp = supabase.table("events").update({"category": category}).eq("id", event["id"]).execute()
-    if update_resp.data is not None:
-      success += 1
-    else:
-      print(f"Failed to update event {event.get('id')}")
+    success = 0
+    for event_id, category in classifications.items():
+      update_resp = supabase.table("events").update({"category": category}).eq("id", event_id).execute()
+      try:
+        ensure_ok(update_resp, action="update events")
+        success += 1
+      except Exception:
+        print(f"Failed to update event {event_id}")
 
-  print(f"✓ Successfully classified {success} events")
+    print(f"✓ Successfully classified {success} events")
+  except Exception as exc:
+    print(f"Error during ingestion: {exc}")
+    raise SystemExit(1)
 
 
 if __name__ == "__main__":

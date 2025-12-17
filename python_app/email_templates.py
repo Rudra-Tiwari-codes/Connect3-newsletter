@@ -1,6 +1,4 @@
-"""
-Simple HTML email templates (Python port of the TS templates).
-"""
+"""Simple HTML email templates for Connect3 newsletters."""
 
 from datetime import datetime
 from typing import Any, Dict, List

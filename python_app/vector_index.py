@@ -1,6 +1,4 @@
-"""
-In-memory vector index with cosine search (Python port of src/lib/vector-index.ts).
-"""
+"""Lightweight in-memory vector index with cosine search."""
 
 import math
 from typing import Any, Dict, List, Optional, Sequence, Tuple
@@ -29,6 +27,9 @@ class VectorIndex:
   def clear(self) -> None:
     self.vectors.clear()
 
+  def size(self) -> int:
+    return len(self.vectors)
+
   def search(self, query: Sequence[float], top_k: int = 10, exclude_ids: Optional[set] = None) -> List[Dict[str, Any]]:
     exclude_ids = exclude_ids or set()
     if len(query) != self.dimension:
@@ -48,6 +49,8 @@ class VectorIndex:
     return results[:top_k]
 
   def search_with_filter(self, query: Sequence[float], top_k: int, predicate) -> List[Dict[str, Any]]:
+    if len(query) != self.dimension:
+      raise ValueError(f"Query vector dimension mismatch: expected {self.dimension}, got {len(query)}")
     filtered = {vid: (vec, meta) for vid, (vec, meta) in self.vectors.items() if predicate(meta)}
     q_norm = math.sqrt(sum(x * x for x in query))
     results: List[Dict[str, Any]] = []

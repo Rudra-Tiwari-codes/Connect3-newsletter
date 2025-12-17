@@ -1,6 +1,4 @@
-"""
-Configuration helpers for the Python port.
-"""
+"""Configuration helpers for the Python implementation."""
 
 import os
 from pathlib import Path
