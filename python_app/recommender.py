@@ -96,7 +96,7 @@ class TwoTowerRecommender:
     if not candidates:
       return []
 
-    candidate_ids = [c["id"] for c in candidates]
+    candidate_ids = [c.get("id") for c in candidates if c.get("id")]
     events_resp = supabase.table("events").select("*").in_("id", candidate_ids).execute()
     ensure_ok(events_resp, action="select events")
     events = events_resp.data or []
