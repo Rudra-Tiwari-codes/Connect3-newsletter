@@ -2,7 +2,7 @@
 
 import smtplib
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from email.message import EmailMessage
 from typing import Any, Dict, List, Mapping
 
@@ -59,27 +59,31 @@ class EmailDeliveryService:
     if not user:
       raise RuntimeError(f"Failed to fetch user {user_id}")
 
+    user_email = user.get("email")
+    if not user_email:
+      raise RuntimeError(f"User {user_id} has no email address")
+
     html = generate_personalized_email(user, events, FEEDBACK_URL)
     subject = f"Your Weekly Event Picks - {len(events)} Events Curated For You"
 
     try:
-      send_email(user["email"], subject, html)
+      send_email(user_email, subject, html)
       log_resp = supabase.table("email_logs").insert({
         "user_id": user_id,
         "status": "sent",
-        "sent_at": datetime.utcnow().isoformat(),
+        "sent_at": datetime.now(timezone.utc).isoformat(),
       }).execute()
       try:
         ensure_ok(log_resp, action="insert email_logs (sent)")
       except Exception as log_exc:
         print(f"Failed to log email success for user {user_id}: {log_exc}")
-      print(f"Email sent successfully to {user['email']}")
+      print(f"Email sent successfully to {user_email}")
     except Exception as exc:
       log_resp = supabase.table("email_logs").insert({
         "user_id": user_id,
         "status": "failed",
         "error_message": str(exc),
-        "sent_at": datetime.utcnow().isoformat(),
+        "sent_at": datetime.now(timezone.utc).isoformat(),
       }).execute()
       try:
         ensure_ok(log_resp, action="insert email_logs (failed)")
