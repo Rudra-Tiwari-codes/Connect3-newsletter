@@ -6,7 +6,7 @@ import random
 import time
 from typing import Callable, TypeVar
 
-from openai import OpenAI
+from openai import OpenAI, AuthenticationError, PermissionDeniedError, BadRequestError
 
 from .config import get_env, require_env
 
@@ -20,9 +20,16 @@ T = TypeVar("T")
 
 
 def with_retry(call: Callable[[], T], *, label: str) -> T:
+  """Execute a callable with retry logic, skipping retries for non-transient errors."""
+  # Errors that should not be retried (not transient)
+  non_retryable = (AuthenticationError, PermissionDeniedError, BadRequestError)
+  
   for attempt in range(1, OPENAI_MAX_RETRIES + 1):
     try:
       return call()
+    except non_retryable:
+      # Don't retry auth/permission/bad request errors - they won't succeed on retry
+      raise
     except Exception as exc:
       if attempt >= OPENAI_MAX_RETRIES:
         raise
