@@ -2,24 +2,27 @@
 
 import json
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from .openai_client import client, with_retry
 from .supabase_client import ensure_ok, supabase
 
-# Event categories for Connect3
+# Event categories for Connect3 - standardized across all modules
 CONNECT3_CATEGORIES = [
-  "tech_workshop",
+  "academic_workshops",
   "career_networking",
-  "hackathon",
-  "social_event",
-  "academic_revision",
-  "recruitment",
-  "industry_talk",
-  "sports_recreation",
+  "social_cultural",
+  "sports_fitness",
+  "arts_music",
+  "tech_innovation",
+  "volunteering_community",
+  "food_dining",
+  "travel_adventure",
+  "health_wellness",
   "entrepreneurship",
-  "community_service",
+  "environment_sustainability",
+  "gaming_esports",
 ]
 
 EMBEDDING_DIM = 1536
@@ -112,7 +115,7 @@ def embed_event(post: Dict[str, Any]) -> Dict[str, Any]:
     "event_id": post["id"],
     "embedding": embedding,
     "category": category,
-    "created_at": post.get("timestamp") or datetime.utcnow().isoformat(),
+    "created_at": post.get("timestamp") or datetime.now(timezone.utc).isoformat(),
   }
 
 
