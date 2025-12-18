@@ -1,10 +1,10 @@
 """Simple HTML email templates for Connect3 newsletters."""
 
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 
-def format_category(category: str | None) -> str:
+def format_category(category: Optional[str]) -> str:
   if not category:
     return "General"
   return " ".join(word.capitalize() for word in category.split("_"))
