@@ -50,6 +50,5 @@ Thumbs.db
 *.index.json
 
 
-.venv
-.pytest_cache
-
+.venv/
+.pytest_cache/
