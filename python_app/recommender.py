@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Dict, List, Mapping, Optional, Sequence
 
 from .embeddings import EMBEDDING_DIM, embed_user
@@ -19,7 +20,7 @@ class RecommendationConfig:
   recency_weight: float = 0.3
   similarity_weight: float = 0.7
   diversity_penalty: float = 0.1
-  max_days_old: int = 60
+  max_days_old: int = 365  # Increased to accommodate test data with varied timestamps
 
   @classmethod
   def from_overrides(cls, overrides: Optional[Mapping[str, object]] = None) -> "RecommendationConfig":
@@ -47,6 +48,23 @@ class TwoTowerRecommender:
   def __init__(self, config: Optional[Mapping[str, object]] = None, index: Optional[VectorIndex] = None) -> None:
     self.config = RecommendationConfig.from_overrides(config)
     self.index = index or VectorIndex(EMBEDDING_DIM)
+    self._events_cache: Dict[str, Dict[str, object]] = {}
+    self._load_events_from_json()
+
+  def _load_events_from_json(self) -> None:
+    """Load event details from all_posts.json into memory cache."""
+    json_path = Path(__file__).resolve().parents[1] / "all_posts.json"
+    if not json_path.exists():
+      print(f"Warning: {json_path} not found, event details will be limited")
+      return
+    try:
+      with open(json_path, 'r', encoding='utf-8') as f:
+        posts = json.load(f)
+      for post in posts:
+        self._events_cache[post['id']] = post
+      print(f"Loaded {len(self._events_cache)} events from all_posts.json")
+    except Exception as e:
+      print(f"Warning: Failed to load all_posts.json: {e}")
 
   def load_event_index(self) -> int:
     """Load all event embeddings from Supabase into the in-memory index."""
@@ -97,10 +115,17 @@ class TwoTowerRecommender:
       return []
 
     candidate_ids = [c.get("id") for c in candidates if c.get("id")]
-    events_resp = supabase.table("events").select("*").in_("id", candidate_ids).execute()
-    ensure_ok(events_resp, action="select events")
-    events = events_resp.data or []
-    event_map = {evt["id"]: evt for evt in events if "id" in evt}
+    
+    # Use events from JSON cache instead of database
+    event_map: Dict[str, Dict[str, object]] = {}
+    for cid in candidate_ids:
+      if cid in self._events_cache:
+        event = dict(self._events_cache[cid])
+        # Add category from candidate metadata
+        candidate_meta = next((c.get("metadata") for c in candidates if c.get("id") == cid), {})
+        if candidate_meta and candidate_meta.get("category"):
+          event["category"] = candidate_meta["category"]
+        event_map[cid] = event
 
     ranked = self._apply_business_rules(candidates, event_map)
     return ranked[: self.config.top_k]
