@@ -48,3 +48,8 @@ Thumbs.db
 
 # Vector index cache
 *.index.json
+
+
+.venv
+.pytest_cache
+
