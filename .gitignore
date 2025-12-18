@@ -49,7 +49,11 @@ Thumbs.db
 # Vector index cache
 *.index.json
 
-
 .venv
 .pytest_cache
 
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
