@@ -1,6 +1,6 @@
 """Classify uncategorized events in Supabase using OpenAI."""
 
-from python_app.ai_classifier import EventClassifier
+from categorize_events import EventClassifier
 from python_app.supabase_client import ensure_ok, supabase
 
 
