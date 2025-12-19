@@ -2,6 +2,21 @@
 
 This guide is the supplementary, hands-on workflow for running and validating the Python backend.
 
+## 0) Setup (one-time)
+1. Create/activate a virtualenv:
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate  # Windows: .venv\\Scripts\\activate
+   ```
+2. Install Python deps (covers `python_app` and the legacy FastAPI code):
+   ```bash
+   python -m pip install -r requirements.txt
+   ```
+3. Quick offline sanity check (no real API calls):
+   ```bash
+   PYTHONPATH=. pytest
+   ```
+
 ## 1) Environment Variables
 Create a local `.env` using `./.env.example` and set values:
 - `OPENAI_API_KEY`
@@ -44,3 +59,5 @@ Create a local `.env` using `./.env.example` and set values:
 - `events.category` is populated for uncategorized rows.
 - `email_logs` shows sent/failed entries after newsletter runs.
 - The recommender returns a non-empty list when data exists.
+
+If any step fails, re-check env vars, Supabase connectivity, and that your virtualenv has the dependencies from `requirements.txt`.
