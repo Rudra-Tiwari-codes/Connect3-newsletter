@@ -1,10 +1,14 @@
 """
 Two-Phase Newsletter Delivery System
 
-Phase 1: Send 9 random events for discovery
-Phase 2: After 5 minutes, send preference-based newsletter (3-3-1-2 distribution)
+Phase 1: Send 9 random events for discovery (exploration)
+Phase 2: Use Two-Tower recommender for semantic matching (exploitation)
 
-Optimized: Uses batch category fetching to reduce DB calls from N to 1.
+The Two-Tower approach uses OpenAI embeddings to find events that are 
+semantically similar to what the user liked in Phase 1, rather than 
+just matching categories.
+
+Optimized: Uses batch category fetching and NumPy vector search.
 """
 
 import json
@@ -16,6 +20,7 @@ from typing import Dict, List, Any, Optional
 from python_app.email_sender import send_email
 from python_app.email_templates import generate_personalized_email
 from python_app.supabase_client import supabase, ensure_ok
+from python_app.recommender import TwoTowerRecommender
 
 
 class CategoryCache:
@@ -211,40 +216,69 @@ def get_random_events(posts: List[Dict], exclude_ids: set, limit: int) -> List[D
     return result
 
 
-def send_phase2_preference_newsletter(user: Dict, posts: List[Dict], phase1_ids: List[str]):
-    """Phase 2: Send preference-based newsletter (3-3-1-2 distribution)"""
+def send_phase2_preference_newsletter(user: Dict, posts: List[Dict], phase1_ids: List[str], recommender: TwoTowerRecommender):
+    """
+    Phase 2: Send semantically personalized newsletter using Two-Tower recommender.
+    
+    Instead of simple category matching (13 buckets), this uses:
+    - 1536-dimensional OpenAI embeddings for semantic understanding
+    - User embedding computed from weighted Phase 1 interactions
+    - Cosine similarity for finding related events
+    - Built-in diversity penalty and recency scoring
+    """
     user_id = user["id"]
-    categories = get_user_preferred_categories(user_id)
-    print(f"  User's preferred categories: {categories}")
     
-    exclude_ids = set(phase1_ids)  # Don't repeat Phase 1 events
-    selected_events = []
-    
-    # 3 from category 1
-    cat1_events = get_events_by_category(posts, categories[0], exclude_ids, 3)
-    selected_events.extend(cat1_events)
-    print(f"  - {len(cat1_events)} from {categories[0]}")
-    
-    # 3 from category 2
-    cat2_events = get_events_by_category(posts, categories[1], exclude_ids, 3)
-    selected_events.extend(cat2_events)
-    print(f"  - {len(cat2_events)} from {categories[1]}")
-    
-    # 1 from category 3
-    cat3_events = get_events_by_category(posts, categories[2], exclude_ids, 1)
-    selected_events.extend(cat3_events)
-    print(f"  - {len(cat3_events)} from {categories[2]}")
-    
-    # 2 random
-    random_events = get_random_events(posts, exclude_ids, 2)
-    selected_events.extend(random_events)
-    print(f"  - {len(random_events)} random")
-    
-    # Send email
-    html = generate_personalized_email(user, selected_events, "https://connect3-newsletter.vercel.app/feedback")
-    subject = f"Phase 2: {len(selected_events)} Events Curated Just For You!"
-    
-    send_email(user["email"], subject, html)
+    try:
+        # Get recommendations using Two-Tower semantic matching
+        # The recommender already:
+        # - Computes user embedding from interactions (likes=1.0, clicks=0.5, dislikes=-0.5)
+        # - Excludes events user already interacted with
+        # - Applies recency weighting and diversity penalty
+        recommendations = recommender.get_recommendations(user_id)
+        
+        if not recommendations:
+            print(f"  Warning: No recommendations for user, falling back to random")
+            exclude_ids = set(phase1_ids)
+            recommendations = get_random_events(posts, exclude_ids, 9)
+        
+        print(f"  Two-Tower generated {len(recommendations)} recommendations")
+        
+        # Log top recommendation scores for debugging
+        for i, rec in enumerate(recommendations[:3]):
+            sim_score = rec.get('similarity_score', 0)
+            category = rec.get('category', 'unknown')
+            print(f"    #{i+1}: {category} (similarity: {sim_score:.3f})")
+        
+        # Format events for email template
+        selected_events = []
+        for rec in recommendations:
+            event = {
+                "event_id": rec.get("event_id"),
+                "id": rec.get("event_id"),
+                "title": rec.get("title", "Event"),
+                "description": rec.get("caption", "")[:200],
+                "category": rec.get("category"),
+                "timestamp": rec.get("timestamp"),
+                "media_url": rec.get("media_url", ""),
+                "permalink": rec.get("permalink", ""),
+                "reason": rec.get("reason", "Recommended for you"),
+            }
+            selected_events.append(event)
+        
+        # Send email
+        html = generate_personalized_email(user, selected_events, "https://connect3-newsletter.vercel.app/feedback")
+        subject = f"Phase 2: {len(selected_events)} Events Personalized For You!"
+        
+        send_email(user["email"], subject, html)
+        
+    except Exception as e:
+        print(f"  Error in Two-Tower recommendations: {e}")
+        # Fallback to random events
+        exclude_ids = set(phase1_ids)
+        selected_events = get_random_events(posts, exclude_ids, 9)
+        html = generate_personalized_email(user, selected_events, "https://connect3-newsletter.vercel.app/feedback")
+        subject = f"Phase 2: {len(selected_events)} Events For You!"
+        send_email(user["email"], subject, html)
 
 
 def run_two_phase_newsletter(delay_minutes: int = 5):
@@ -263,7 +297,7 @@ def run_two_phase_newsletter(delay_minutes: int = 5):
     users = users_resp.data or []
     
     print(f"\n{'='*50}")
-    print("PHASE 1: INITIAL DISCOVERY")
+    print("PHASE 1: INITIAL DISCOVERY (Random Events)")
     print(f"{'='*50}")
     
     phase1_sent = {}
@@ -295,8 +329,14 @@ def run_two_phase_newsletter(delay_minutes: int = 5):
         time.sleep(30)
     
     print(f"\n{'='*50}")
-    print("PHASE 2: PREFERENCE-BASED NEWSLETTER")
+    print("PHASE 2: TWO-TOWER SEMANTIC RECOMMENDATIONS")
     print(f"{'='*50}")
+    
+    # Initialize Two-Tower recommender with NumPy-optimized vector search
+    print("\nInitializing Two-Tower recommender...")
+    recommender = TwoTowerRecommender()
+    event_count = recommender.load_event_index()
+    print(f"Loaded {event_count} event embeddings into vector index")
     
     for user in users:
         if not user.get("email"):
@@ -304,8 +344,8 @@ def run_two_phase_newsletter(delay_minutes: int = 5):
         
         print(f"\nProcessing: {user['email']}")
         phase1_ids = phase1_sent.get(user["id"], [])
-        send_phase2_preference_newsletter(user, posts, phase1_ids)
-        print(f"  Phase 2 sent: Personalized events")
+        send_phase2_preference_newsletter(user, posts, phase1_ids, recommender)
+        print(f"  Phase 2 sent: Semantically personalized events")
     
     print(f"\n{'='*50}")
     print("TWO-PHASE NEWSLETTER COMPLETE!")
