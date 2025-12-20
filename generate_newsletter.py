@@ -49,7 +49,7 @@ def render_newsletter(events, user_id):
                 <img src="{{ event.image_url or 'https://via.placeholder.com/150' }}" width="100%" style="border-radius: 5px;">
                 <h3 style="font-size: 16px;">{{ event.title }}</h3>
                 <p style="font-size: 11px; color: #888; text-transform: uppercase;">{{ event.category }}</p>
-                <a href="https://connect3.app/feedback?user={{ user_id }}&event={{ event.id }}&cat={{ event.category or 'general' }}&action=like" 
+                <a href="https://connect3-newsletter.vercel.app/feedback?user={{ user_id }}&event={{ event.id }}&cat={{ event.category or 'general' }}&action=like" 
                    style="display: block; text-align: center; background: #007bff; color: white; padding: 8px; text-decoration: none; border-radius: 5px; margin-top: 10px;">
                    ❤️ Like
                 </a>

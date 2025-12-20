@@ -26,8 +26,7 @@ def generate_personalized_email(user: Dict[str, Any], events: List[Dict[str, Any
     user_id = user.get('id')
     
     # Tracking API stores the interaction then redirects to clean connect3.app URL
-    # TODO: Replace localhost with your deployed tracking API URL
-    tracking_base = "http://localhost:5000"  # Change to your deployed URL
+    tracking_base = "https://connect3-newsletter.vercel.app"
     like_url = f"{tracking_base}/feedback?uid={user_id}&eid={event_id}&cat={category}&action=like"
     dislike_url = f"{tracking_base}/feedback?uid={user_id}&eid={event_id}&cat={category}&action=dislike"
     
