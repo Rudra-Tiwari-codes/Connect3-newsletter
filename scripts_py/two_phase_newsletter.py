@@ -10,6 +10,7 @@ Optimized: Uses batch category fetching to reduce DB calls from N to 1.
 import json
 import random
 import time
+from datetime import datetime, timezone
 from collections import Counter
 from typing import Dict, List, Any, Optional
 
@@ -85,6 +86,25 @@ def load_posts() -> List[Dict[str, Any]]:
     """Load events from all_posts.json"""
     with open("all_posts.json", "r", encoding="utf-8") as f:
         return json.load(f)
+
+
+def is_new_recipient(user: Dict[str, Any]) -> bool:
+    """Determine if a user should receive the two-phase onboarding flow."""
+    is_new_flag = user.get("is_new_receipient")
+    first_sent_at = user.get("first_newsletter_sent_at")
+    return bool(is_new_flag) or not first_sent_at
+
+
+def mark_user_onboarded(user: Dict[str, Any]) -> None:
+    """Mark a user as no longer new after the initial newsletter."""
+    payload: Dict[str, Any] = {"is_new_receipient": False}
+    if not user.get("first_newsletter_sent_at"):
+        payload["first_newsletter_sent_at"] = datetime.now(timezone.utc).isoformat()
+    try:
+        resp = supabase.table("users").update(payload).eq("id", user["id"]).execute()
+        ensure_ok(resp, action="update user onboarding status")
+    except Exception as e:
+        print(f"  Warning: Failed to update onboarding status for user {user.get('id')}: {e}")
 
 
 def clear_user_interactions(user_id: str):
@@ -258,54 +278,71 @@ def run_two_phase_newsletter(delay_minutes: int = 5):
     _category_cache.load_all(event_ids)
     
     # Get users
-    users_resp = supabase.table("users").select("*").execute()
+    users_resp = supabase.table("users").select(
+        "id,email,name,is_new_receipient,first_newsletter_sent_at"
+    ).execute()
     ensure_ok(users_resp, action="select users")
     users = users_resp.data or []
-    
-    print(f"\n{'='*50}")
-    print("PHASE 1: INITIAL DISCOVERY")
-    print(f"{'='*50}")
-    
+
+    new_users = []
+    returning_users = []
+    for user in users:
+        if not user.get("email"):
+            continue
+        if is_new_recipient(user):
+            new_users.append(user)
+        else:
+            returning_users.append(user)
+
+    if returning_users:
+        print(f"\n{'='*50}")
+        print("PREFERENCE-BASED NEWSLETTER (RETURNING USERS)")
+        print(f"{'='*50}")
+
+        for user in returning_users:
+            print(f"\nProcessing: {user['email']}")
+            send_phase2_preference_newsletter(user, posts, [])
+            print("  Sent: Personalized events")
+
     phase1_sent = {}
-    
-    for user in users:
-        if not user.get("email"):
-            continue
-        
-        print(f"\nProcessing: {user['email']}")
-        
-        # Clear previous interactions for fresh start
-        clear_user_interactions(user["id"])
-        
-        # Send Phase 1
-        sent_ids = send_phase1_random_newsletter(user, posts)
-        phase1_sent[user["id"]] = sent_ids
-        print(f"  Phase 1 sent: 9 random events")
-    
-    print(f"\n{'='*50}")
-    print(f"WAITING {delay_minutes} MINUTES FOR USER TO SELECT PREFERENCES...")
-    print(f"{'='*50}")
-    print(f"(Click 'Interested' on events you like in the email!)")
-    
-    # Wait for user to interact
-    for remaining in range(delay_minutes * 60, 0, -30):
-        mins = remaining // 60
-        secs = remaining % 60
-        print(f"  Time remaining: {mins}m {secs}s")
-        time.sleep(30)
-    
-    print(f"\n{'='*50}")
-    print("PHASE 2: PREFERENCE-BASED NEWSLETTER")
-    print(f"{'='*50}")
-    
-    for user in users:
-        if not user.get("email"):
-            continue
-        
-        print(f"\nProcessing: {user['email']}")
-        phase1_ids = phase1_sent.get(user["id"], [])
-        send_phase2_preference_newsletter(user, posts, phase1_ids)
-        print(f"  Phase 2 sent: Personalized events")
+    if new_users:
+        print(f"\n{'='*50}")
+        print("PHASE 1: INITIAL DISCOVERY (NEW USERS)")
+        print(f"{'='*50}")
+
+        for user in new_users:
+            print(f"\nProcessing: {user['email']}")
+
+            # Clear previous interactions for fresh start
+            clear_user_interactions(user["id"])
+
+            # Send Phase 1
+            sent_ids = send_phase1_random_newsletter(user, posts)
+            phase1_sent[user["id"]] = sent_ids
+            mark_user_onboarded(user)
+            print("  Phase 1 sent: 9 random events")
+
+        print(f"\n{'='*50}")
+        print(f"WAITING {delay_minutes} MINUTES FOR USER TO SELECT PREFERENCES...")
+        print(f"{'='*50}")
+        print("(Click 'Interested' on events you like in the email!)")
+
+        # Wait for user to interact
+        for remaining in range(delay_minutes * 60, 0, -30):
+            mins = remaining // 60
+            secs = remaining % 60
+            print(f"  Time remaining: {mins}m {secs}s")
+            time.sleep(30)
+
+        print(f"\n{'='*50}")
+        print("PHASE 2: PREFERENCE-BASED NEWSLETTER (NEW USERS)")
+        print(f"{'='*50}")
+
+        for user in new_users:
+            print(f"\nProcessing: {user['email']}")
+            phase1_ids = phase1_sent.get(user["id"], [])
+            send_phase2_preference_newsletter(user, posts, phase1_ids)
+            print("  Phase 2 sent: Personalized events")
     
     print(f"\n{'='*50}")
     print("TWO-PHASE NEWSLETTER COMPLETE!")
