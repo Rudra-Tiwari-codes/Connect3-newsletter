@@ -9,10 +9,15 @@ Optimized: Uses batch category fetching to reduce DB calls from N to 1.
 
 import json
 import random
+import sys
 import time
 from datetime import datetime, timezone
 from collections import Counter
+from pathlib import Path
 from typing import Dict, List, Any, Optional
+
+# Add parent directory to path so we can import python_app from any directory
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from python_app.email_sender import send_email
 from python_app.email_templates import generate_personalized_email

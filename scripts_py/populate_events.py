@@ -1,5 +1,11 @@
 """Script to populate the events table from all_posts.json"""
 import json
+import sys
+from pathlib import Path
+
+# Add parent directory to path so we can import python_app from any directory
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
 from python_app.supabase_client import supabase, ensure_ok
 
 def main():

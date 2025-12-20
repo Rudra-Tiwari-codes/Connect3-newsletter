@@ -1,9 +1,13 @@
 """Embed and classify events from all_posts.json, then upsert embeddings to Supabase."""
 
 import json
+import sys
 import time
 from pathlib import Path
 from typing import Any, Dict
+
+# Add parent directory to path so we can import python_app
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from python_app.embeddings import embed_event
 from python_app.supabase_client import ensure_ok, supabase

@@ -1,5 +1,11 @@
 """Classify uncategorized events in Supabase using OpenAI."""
 
+import sys
+from pathlib import Path
+
+# Add parent directory to path so we can import python_app from any directory
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
 from categorize_events import EventClassifier
 from python_app.supabase_client import ensure_ok, supabase
 
