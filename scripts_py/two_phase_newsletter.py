@@ -3,31 +3,88 @@ Two-Phase Newsletter Delivery System
 
 Phase 1: Send 9 random events for discovery
 Phase 2: After 5 minutes, send preference-based newsletter (3-3-1-2 distribution)
+
+Optimized: Uses batch category fetching to reduce DB calls from N to 1.
 """
 
 import json
 import random
 import time
 from collections import Counter
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 
 from python_app.email_sender import send_email
 from python_app.email_templates import generate_personalized_email
 from python_app.supabase_client import supabase, ensure_ok
 
 
+class CategoryCache:
+    """
+    Batch-fetches all event categories at once to avoid N+1 query problem.
+    
+    Instead of calling the database once per event (N calls), this fetches
+    all categories in a single query and caches them for O(1) lookups.
+    """
+    
+    def __init__(self):
+        self._cache: Dict[str, str] = {}
+        self._loaded = False
+    
+    def load_all(self, event_ids: Optional[List[str]] = None) -> None:
+        """
+        Load all categories from the database in a single query.
+        
+        Args:
+            event_ids: Optional list of specific event IDs to fetch.
+                       If None, fetches ALL categories.
+        """
+        try:
+            if event_ids:
+                # Fetch only specific events (still much better than N queries)
+                resp = supabase.table("event_embeddings").select("event_id, category").in_("event_id", event_ids).execute()
+            else:
+                # Fetch all categories at once
+                resp = supabase.table("event_embeddings").select("event_id, category").execute()
+            
+            if resp.data:
+                for row in resp.data:
+                    event_id = row.get("event_id")
+                    category = row.get("category")
+                    if event_id:
+                        self._cache[event_id] = category or "general"
+            
+            self._loaded = True
+            print(f"  CategoryCache: Loaded {len(self._cache)} categories in 1 query")
+        except Exception as e:
+            print(f"  Warning: Failed to batch load categories: {e}")
+            self._loaded = True  # Prevent retry loops
+    
+    def get(self, event_id: str) -> str:
+        """
+        Get category for an event, using cache if available.
+        Falls back to 'general' if not found.
+        """
+        return self._cache.get(event_id, "general")
+    
+    def clear(self) -> None:
+        """Clear the cache."""
+        self._cache.clear()
+        self._loaded = False
+
+
+# Global cache instance - loaded once per newsletter run
+_category_cache = CategoryCache()
+
+
+def get_category_for_event(event_id: str) -> str:
+    """Get category for an event from cache (O(1) lookup after batch load)."""
+    return _category_cache.get(event_id)
+
+
 def load_posts() -> List[Dict[str, Any]]:
     """Load events from all_posts.json"""
     with open("all_posts.json", "r", encoding="utf-8") as f:
         return json.load(f)
-
-
-def get_category_for_event(event_id: str) -> str:
-    """Get category for an event from event_embeddings"""
-    resp = supabase.table("event_embeddings").select("category").eq("event_id", event_id).limit(1).execute()
-    if resp.data and resp.data[0].get("category"):
-        return resp.data[0]["category"]
-    return "general"
 
 
 def clear_user_interactions(user_id: str):
@@ -194,6 +251,11 @@ def run_two_phase_newsletter(delay_minutes: int = 5):
     """Run the complete two-phase newsletter flow"""
     posts = load_posts()
     print(f"Loaded {len(posts)} events from all_posts.json")
+    
+    # OPTIMIZATION: Batch-load all categories in a single DB query
+    # This replaces N individual queries with 1 query
+    event_ids = [p.get("id") for p in posts if p.get("id")]
+    _category_cache.load_all(event_ids)
     
     # Get users
     users_resp = supabase.table("users").select("*").execute()

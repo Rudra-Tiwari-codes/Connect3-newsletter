@@ -1,7 +1,7 @@
 supabase
 python-dotenv
 openai
-
+numpy
 
 jinja2
 
