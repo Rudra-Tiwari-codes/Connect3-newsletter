@@ -20,8 +20,16 @@ def generate_personalized_email(user: Dict[str, Any], events: List[Dict[str, Any
       when_str = when_dt.strftime("%B %d, %Y at %I:%M %p") if when_dt else ""
     except Exception:
       when_str = when or ""
-    like_url = f"{feedback_base_url}?uid={user.get('id')}&eid={evt.get('id')}&action=like"
-    dislike_url = f"{feedback_base_url}?uid={user.get('id')}&eid={evt.get('id')}&action=dislike"
+    
+    # Build tracking URLs - redirect to connect3.app while including category for preference tracking
+    event_id = evt.get('event_id') or evt.get('id')
+    category = evt.get('category') or 'general'
+    user_id = user.get('id')
+    
+    # URL includes category so backend can store user's categorical preferences
+    like_url = f"https://connect3.app/feedback?uid={user_id}&eid={event_id}&cat={category}&action=like"
+    dislike_url = f"https://connect3.app/feedback?uid={user_id}&eid={event_id}&cat={category}&action=dislike"
+    
     cards.append(
       f"""
       <div style="background: #fff; border-radius: 10px; padding: 16px; margin-bottom: 16px; border: 1px solid #e5e7eb;">
@@ -39,6 +47,7 @@ def generate_personalized_email(user: Dict[str, Any], events: List[Dict[str, Any
       </div>
       """
     )
+
 
   return f"""
 <!DOCTYPE html>
