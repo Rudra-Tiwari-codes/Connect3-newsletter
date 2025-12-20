@@ -41,7 +41,7 @@ cp .env.example .env
 # Set: SUPABASE_URL, SUPABASE_KEY, OPENAI_API_KEY, SENDER_EMAIL, GMAIL_APP_PASSWORD
 ```
 
-> ⚠️ Never commit `.env` with real credentials.
+> Never commit `.env` with real credentials.
 
 ## Main Scripts
 

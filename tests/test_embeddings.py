@@ -28,7 +28,7 @@ class _FakeSupabase:
     self._prefs = prefs
 
   def table(self, name):
-    if name == "feedback_logs":
+    if name == "interactions":
       return _FakeQuery(self._feedback)
     if name == "event_embeddings":
       return _FakeQuery(self._embeddings)
@@ -47,7 +47,7 @@ def test_embed_user_uses_weighted_history(monkeypatch):
   monkeypatch.setattr(emb, "generate_embedding", lambda text: [1.0, 1.0, 1.0])
   monkeypatch.setattr(emb, "EMBEDDING_DIM", 3)
 
-  feedback = [{"event_id": "e1", "action": "like"}, {"event_id": "e2", "action": "dislike"}]
+  feedback = [{"event_id": "e1", "interaction_type": "like"}, {"event_id": "e2", "interaction_type": "dislike"}]
   embeddings = [
     {"event_id": "e1", "embedding": [1.0, 0.0, 0.0]},
     {"event_id": "e2", "embedding": [0.0, 1.0, 0.0]},

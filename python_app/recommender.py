@@ -104,10 +104,11 @@ class TwoTowerRecommender:
       return []
 
     # Exclude events the user already interacted with
-    feedback_resp = supabase.table("feedback_logs").select("event_id").eq("user_id", user_id).execute()
-    ensure_ok(feedback_resp, action="select feedback_logs")
+    feedback_resp = supabase.table("interactions").select("event_id").eq("user_id", user_id).execute()
+    ensure_ok(feedback_resp, action="select interactions")
     feedback = feedback_resp.data or []
     exclude_ids = {row["event_id"] for row in feedback if "event_id" in row}
+
 
     candidate_count = self.config.top_k * self.config.candidate_multiplier
     candidates = self.index.search(user_vector, top_k=candidate_count, exclude_ids=exclude_ids)

@@ -125,12 +125,12 @@ def embed_user(user_id: str) -> List[float]:
   Mirrors the TypeScript logic with weighted averaging.
   """
   interactions_resp = (
-    supabase.table("feedback_logs")
-    .select("event_id, action")
+    supabase.table("interactions")
+    .select("event_id, interaction_type")
     .eq("user_id", user_id)
     .execute()
   )
-  ensure_ok(interactions_resp, action="select feedback_logs")
+  ensure_ok(interactions_resp, action="select interactions")
   interactions = interactions_resp.data or []
   if interactions:
     weights = {"like": 1.0, "click": 0.5, "dislike": -0.5}
@@ -156,7 +156,7 @@ def embed_user(user_id: str) -> List[float]:
         emb_vec = emb_map.get(i.get("event_id"))
         if not emb_vec or len(emb_vec) != EMBEDDING_DIM:
           continue
-        weight = weights.get(i.get("action"), 0.0)
+        weight = weights.get(i.get("interaction_type"), 0.0)
         for idx, val in enumerate(emb_vec):
           vec[idx] += val * weight
         total += abs(weight)
