@@ -1,49 +1,100 @@
 -- ============================================
--- Connect3 Newsletter - Required Tables Migration
+-- Connect3 Newsletter - Complete Database Schema
 -- Run this in Supabase SQL Editor
 -- ============================================
 
--- 1. Create event_embeddings table
--- NOTE: event_id is INT8 to match your events.id column
-CREATE TABLE IF NOT EXISTS public.event_embeddings (
-    event_id INT8 PRIMARY KEY REFERENCES public.events(id) ON DELETE CASCADE,
+-- ============================================
+-- EXISTING TABLES (already in your database)
+-- ============================================
+-- 1. events (id: int8, title, description, date, category, image_url, created_at)
+-- 2. users (id: uuid, email, name, preferences, created_at)
+-- 3. interactions (id, user_id, event_id, interaction_type, created_at)
+
+-- ============================================
+-- NEW TABLES TO CREATE
+-- ============================================
+
+-- 1. event_embeddings - Stores vector embeddings for event recommendations
+-- NOTE: Uses TEXT for event_id to match Instagram post IDs from all_posts.json
+DROP TABLE IF EXISTS public.event_embeddings;
+CREATE TABLE public.event_embeddings (
+    event_id TEXT PRIMARY KEY,
     embedding JSONB NOT NULL,
     category TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Add index for faster category lookups
 CREATE INDEX IF NOT EXISTS idx_event_embeddings_category ON public.event_embeddings(category);
 
--- Enable RLS (Row Level Security)
 ALTER TABLE public.event_embeddings ENABLE ROW LEVEL SECURITY;
 
--- Allow all users to read event_embeddings
-CREATE POLICY "Allow read access to event_embeddings" ON public.event_embeddings
+CREATE POLICY "Allow read event_embeddings" ON public.event_embeddings
     FOR SELECT USING (true);
 
--- Allow all operations (for service key)
-CREATE POLICY "Allow all operations on event_embeddings" ON public.event_embeddings
+CREATE POLICY "Allow all event_embeddings" ON public.event_embeddings
     FOR ALL USING (true) WITH CHECK (true);
 
 -- ============================================
--- NOTE: You already have an 'interactions' table!
--- The pipeline can use it instead of feedback_logs.
--- If you still want feedback_logs, uncomment below:
+
+-- 2. user_preferences - Stores user interest scores for cold-start recommendations
+CREATE TABLE IF NOT EXISTS public.user_preferences (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
+    tech_innovation FLOAT DEFAULT 0.5,
+    career_networking FLOAT DEFAULT 0.5,
+    academic_workshops FLOAT DEFAULT 0.5,
+    social_cultural FLOAT DEFAULT 0.5,
+    entrepreneurship FLOAT DEFAULT 0.5,
+    sports_fitness FLOAT DEFAULT 0.5,
+    arts_music FLOAT DEFAULT 0.5,
+    volunteering_community FLOAT DEFAULT 0.5,
+    food_dining FLOAT DEFAULT 0.5,
+    travel_adventure FLOAT DEFAULT 0.5,
+    health_wellness FLOAT DEFAULT 0.5,
+    environment_sustainability FLOAT DEFAULT 0.5,
+    gaming_esports FLOAT DEFAULT 0.5,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_preferences_user_id ON public.user_preferences(user_id);
+
+ALTER TABLE public.user_preferences ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view own preferences" ON public.user_preferences
+    FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Allow all user_preferences" ON public.user_preferences
+    FOR ALL USING (true) WITH CHECK (true);
+
 -- ============================================
 
--- CREATE TABLE IF NOT EXISTS public.feedback_logs (
---     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
---     user_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
---     event_id INT8 REFERENCES public.events(id) ON DELETE CASCADE,
---     feedback_type TEXT NOT NULL CHECK (feedback_type IN ('like', 'dislike', 'click', 'view')),
---     created_at TIMESTAMPTZ DEFAULT NOW()
--- );
+-- 3. email_logs - Tracks sent emails for analytics
+CREATE TABLE IF NOT EXISTS public.email_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
+    status TEXT NOT NULL CHECK (status IN ('sent', 'failed', 'pending')),
+    error_message TEXT,
+    events_sent JSONB,
+    sent_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_email_logs_user_id ON public.email_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_email_logs_status ON public.email_logs(status);
+
+ALTER TABLE public.email_logs ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Allow read email_logs" ON public.email_logs
+    FOR SELECT USING (true);
+
+CREATE POLICY "Allow all email_logs" ON public.email_logs
+    FOR ALL USING (true) WITH CHECK (true);
 
 -- ============================================
--- Verify table created
+-- VERIFY ALL TABLES EXIST
 -- ============================================
 SELECT table_name FROM information_schema.tables 
 WHERE table_schema = 'public' 
-AND table_name = 'event_embeddings';
-
+AND table_name IN ('events', 'users', 'interactions', 'event_embeddings', 'user_preferences', 'email_logs')
+ORDER BY table_name;
