@@ -14,7 +14,7 @@ from .supabase_client import ensure_ok, supabase
 GMAIL_USER = get_env("GMAIL_USER")
 GMAIL_APP_PASSWORD = get_env("GMAIL_APP_PASSWORD")
 FROM_EMAIL = get_env("GMAIL_FROM_EMAIL") or GMAIL_USER or "noreply@example.com"
-FEEDBACK_URL = (get_env("NEXT_PUBLIC_APP_URL") or "http://localhost:3000") + "/api/feedback"
+FEEDBACK_URL = "https://connect3-newsletter.vercel.app/feedback"
 SMTP_TIMEOUT_SEC = max(1, int(get_env("SMTP_TIMEOUT_SEC", "30") or "30"))
 
 

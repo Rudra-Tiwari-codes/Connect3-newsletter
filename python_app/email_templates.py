@@ -21,7 +21,8 @@ def generate_personalized_email(user: Dict[str, Any], events: List[Dict[str, Any
     except Exception:
       when_str = when or ""
     # Build tracking URLs - goes to tracking API which stores click then redirects to connect3.app
-    event_id = evt.get('event_id') or evt.get('id')
+    # Recommender returns 'event_id', all_posts.json uses 'id'
+    event_id = evt.get('event_id') or evt.get('id') or 'unknown'
     category = evt.get('category') or 'general'
     user_id = user.get('id')
     
