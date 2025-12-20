@@ -120,6 +120,121 @@ python categorize_events.py
 python scripts_py/two_phase_newsletter.py
 ```
 
+## Real-Time Testing Guide
+
+### Prerequisites Checklist
+
+Before testing, ensure you have:
+
+1. **Environment configured** (`.env` file with all keys)
+2. **Database ready** - Run `database/migrate_tables.sql` in Supabase SQL Editor
+3. **At least one user** in the `users` table with a valid email
+4. **Events embedded** - Run `python scripts_py/embed_events.py` at least once
+
+### Step 1: Test Database Connection
+
+```bash
+python test_db.py
+```
+✅ Should show "Connection successful" and sample data
+
+### Step 2: Test Event Embeddings
+
+```bash
+# Generate embeddings for all events in all_posts.json
+python scripts_py/embed_events.py
+```
+✅ Should show "Embedded X events" without errors
+
+### Step 3: Test Event Categorization
+
+```bash
+# Categorize any uncategorized events using GPT-4o-mini
+python categorize_events.py
+```
+✅ Should categorize events or say "No uncategorized events found"
+
+### Step 4: Test Email Sending (Single Email)
+
+```python
+# In Python REPL or a test script:
+from python_app.email_sender import EmailDeliveryService
+EmailDeliveryService().send_test_email("your@email.com")
+```
+✅ Check your inbox for "Test Email - Event Newsletter System"
+
+### Step 5: Full Two-Phase Newsletter Test
+
+```bash
+# Run the complete two-phase flow (default 5-minute wait)
+python scripts_py/two_phase_newsletter.py
+
+# Or with shorter wait time for testing (1 minute)
+python -c "from scripts_py.two_phase_newsletter import run_two_phase_newsletter; run_two_phase_newsletter(delay_minutes=1)"
+```
+
+**Expected Output:**
+```
+Loaded X events from all_posts.json
+CategoryCache: Loaded X categories in 1 query
+
+==================================================
+PHASE 1: INITIAL DISCOVERY (Random Events)
+==================================================
+
+Processing: user@example.com
+  Cleared previous interactions for user abc-123
+  Phase 1 sent: 9 random events
+
+==================================================
+WAITING 5 MINUTES FOR USER TO SELECT PREFERENCES...
+==================================================
+(Click 'Interested' on events you like in the email!)
+  Time remaining: 5m 0s
+  ...
+
+==================================================
+PHASE 2: PREFERENCE-BASED NEWSLETTER
+==================================================
+
+Processing: user@example.com
+  User's preferred categories: ['tech_innovation', 'career_networking', 'academic_workshops']
+  Stored top categories: ['tech_innovation', 'career_networking', 'academic_workshops']
+  - 3 from tech_innovation
+  - 3 from career_networking
+  - 1 from academic_workshops
+  - 2 exploration from: ['sports_fitness', 'arts_music']
+  Phase 2 sent: Personalized events
+
+==================================================
+TWO-PHASE NEWSLETTER COMPLETE!
+==================================================
+```
+
+### Step 6: Verify in Database
+
+After running, check Supabase:
+
+```sql
+-- Check interactions were recorded
+SELECT * FROM interactions ORDER BY created_at DESC LIMIT 10;
+
+-- Check user's top categories were stored
+SELECT id, email, top_categories FROM users;
+
+-- Check email logs
+SELECT * FROM email_logs ORDER BY sent_at DESC LIMIT 10;
+```
+
+### Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| "Gmail not configured" | Set `GMAIL_USER` and `GMAIL_APP_PASSWORD` in `.env` |
+| "No users found" | Add a user to the `users` table in Supabase |
+| "No embeddings" | Run `python scripts_py/embed_events.py` first |
+| Emails not arriving | Check spam folder; verify Gmail App Password is correct |
+
 ## Event Categories
 
 Events are classified into 13 categories:
@@ -138,4 +253,3 @@ pytest tests/ -v
 ## License
 
 MIT
-
