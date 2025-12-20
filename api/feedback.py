@@ -32,12 +32,22 @@ class handler(BaseHTTPRequestHandler):
         # Store the interaction if we have required data
         if supabase and user_id and event_id:
             try:
-                # Store in interactions table
-                supabase.table('interactions').insert({
-                    'user_id': user_id,
-                    'event_id': event_id,
-                    'interaction_type': action
-                }).execute()
+                # Check for existing interaction (prevent duplicates)
+                existing = supabase.table('interactions').select('id, interaction_type').eq('user_id', user_id).eq('event_id', event_id).limit(1).execute()
+                
+                if existing.data:
+                    # Update existing interaction if action changed
+                    if existing.data[0].get('interaction_type') != action:
+                        supabase.table('interactions').update({
+                            'interaction_type': action
+                        }).eq('id', existing.data[0]['id']).execute()
+                else:
+                    # Insert new interaction (no duplicate exists)
+                    supabase.table('interactions').insert({
+                        'user_id': user_id,
+                        'event_id': event_id,
+                        'interaction_type': action
+                    }).execute()
                 
                 # Update user preferences for the category
                 if category and category != 'general':
