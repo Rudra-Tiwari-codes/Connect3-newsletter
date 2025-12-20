@@ -38,7 +38,7 @@ def main() -> None:
     else:
       print("No recommendations generated - skipping email delivery")
     
-    print("✓ Newsletter delivery complete!")
+    print("Newsletter delivery complete!")
   except Exception as exc:
     print(f"Error during newsletter sending: {exc}")
     raise SystemExit(1)
