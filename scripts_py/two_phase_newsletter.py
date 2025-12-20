@@ -189,21 +189,46 @@ def get_events_by_category(posts: List[Dict], category: str, exclude_ids: set, l
     return matching
 
 
-def get_random_events(posts: List[Dict], exclude_ids: set, limit: int) -> List[Dict]:
-    """Get random events for exploration"""
-    available = [p for p in posts if p.get("id") not in exclude_ids]
-    selected = random.sample(available, min(limit, len(available)))
+def get_exploration_events(posts: List[Dict], exclude_ids: set, preferred_categories: List[str], limit: int) -> List[Dict]:
+    """
+    Get events from categories NOT in user's preferences for discovery/exploration.
+    This helps users discover new interests outside their current preferences.
+    """
+    # Find events in non-preferred categories
+    exploration_candidates = []
+    for post in posts:
+        event_id = post.get("id")
+        if event_id in exclude_ids:
+            continue
+        
+        category = get_category_for_event(event_id)
+        # Only include if NOT in user's preferred categories
+        if category not in preferred_categories and category != "general":
+            exploration_candidates.append((post, category))
+    
+    # Randomly select from exploration candidates
+    if not exploration_candidates:
+        # Fallback: if no exploration events, just get any random events
+        available = [p for p in posts if p.get("id") not in exclude_ids]
+        selected = random.sample(available, min(limit, len(available)))
+        exploration_candidates = [(p, get_category_for_event(p.get("id"))) for p in selected]
+    else:
+        exploration_candidates = random.sample(
+            exploration_candidates, 
+            min(limit, len(exploration_candidates))
+        )
     
     result = []
-    for post in selected:
+    for post, category in exploration_candidates:
         event_id = post.get("id")
         event = {
             "event_id": event_id,
             "id": event_id,
             "title": post.get("caption", "")[:80].split('\n')[0] or "Event",
             "description": post.get("caption", "")[:200],
-            "category": get_category_for_event(event_id),
+            "category": category,
             "timestamp": post.get("timestamp"),
+            "is_exploration": True,  # Mark as exploration event
         }
         exclude_ids.add(event_id)
         result.append(event)
@@ -211,11 +236,28 @@ def get_random_events(posts: List[Dict], exclude_ids: set, limit: int) -> List[D
     return result
 
 
+def store_user_top_categories(user_id: str, categories: List[str]) -> None:
+    """
+    Store user's top categories in the users table for future reference.
+    This allows tracking preference evolution over time.
+    """
+    try:
+        supabase.table("users").update({
+            "top_categories": categories
+        }).eq("id", user_id).execute()
+        print(f"  Stored top categories: {categories}")
+    except Exception as e:
+        print(f"  Warning: Could not store top categories: {e}")
+
+
 def send_phase2_preference_newsletter(user: Dict, posts: List[Dict], phase1_ids: List[str]):
     """Phase 2: Send preference-based newsletter (3-3-1-2 distribution)"""
     user_id = user["id"]
     categories = get_user_preferred_categories(user_id)
     print(f"  User's preferred categories: {categories}")
+    
+    # Store user's top categories for future reference
+    store_user_top_categories(user_id, categories)
     
     exclude_ids = set(phase1_ids)  # Don't repeat Phase 1 events
     selected_events = []
@@ -235,10 +277,11 @@ def send_phase2_preference_newsletter(user: Dict, posts: List[Dict], phase1_ids:
     selected_events.extend(cat3_events)
     print(f"  - {len(cat3_events)} from {categories[2]}")
     
-    # 2 random
-    random_events = get_random_events(posts, exclude_ids, 2)
-    selected_events.extend(random_events)
-    print(f"  - {len(random_events)} random")
+    # 2 exploration events from NON-preferred categories
+    exploration_events = get_exploration_events(posts, exclude_ids, categories, 2)
+    selected_events.extend(exploration_events)
+    exploration_cats = [e.get('category', 'unknown') for e in exploration_events]
+    print(f"  - {len(exploration_events)} exploration from: {exploration_cats}")
     
     # Send email
     html = generate_personalized_email(user, selected_events, "https://connect3-newsletter.vercel.app/feedback")

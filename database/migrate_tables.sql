@@ -7,8 +7,14 @@
 -- EXISTING TABLES (already in your database)
 -- ============================================
 -- 1. events (id: int8, title, description, date, category, image_url, created_at)
--- 2. users (id: uuid, email, name, preferences, created_at)
+-- 2. users (id: uuid, email, name, preferences, top_categories, created_at)
 -- 3. interactions (id, user_id, event_id, interaction_type, created_at)
+
+-- ============================================
+-- ADD top_categories COLUMN TO USERS TABLE
+-- ============================================
+-- This stores user's top 3 preferred categories as a JSON array
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS top_categories JSONB DEFAULT '[]'::jsonb;
 
 -- ============================================
 -- NEW TABLES TO CREATE
