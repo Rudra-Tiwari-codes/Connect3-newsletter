@@ -2,6 +2,8 @@
 
 Personalized university event newsletter system built for DSCubed at the University of Melbourne.
 
+**Created by Nirav and Rudra**
+
 ## Features
 
 - **AI-Powered Event Categorization** using GPT-4o-mini
