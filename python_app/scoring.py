@@ -10,9 +10,12 @@ from typing import Any, Dict, List, Optional
 
 from .supabase_client import ensure_ok, supabase
 
+# 13 categories total - uniform distribution baseline
+NUM_CATEGORIES = 13
+DEFAULT_CATEGORY_SCORE = 1.0 / NUM_CATEGORIES  # ~0.077 (uniform probability)
+
 CLUSTER_MATCH_WEIGHT = 50
 MAX_URGENCY_SCORE = 30
-DEFAULT_CATEGORY_SCORE = 0.5
 DECAY_HALF_LIFE_DAYS = 30.0  # Interaction weight halves every 30 days
 
 

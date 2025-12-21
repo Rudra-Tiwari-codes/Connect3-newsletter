@@ -43,22 +43,23 @@ CREATE POLICY "Allow all event_embeddings" ON public.event_embeddings
 -- ============================================
 
 -- 2. user_preferences - Stores user interest scores for cold-start recommendations
+-- Defaults to uniform distribution: 1/13 ≈ 0.077 per category
 CREATE TABLE IF NOT EXISTS public.user_preferences (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
-    tech_innovation FLOAT DEFAULT 0.5,
-    career_networking FLOAT DEFAULT 0.5,
-    academic_workshops FLOAT DEFAULT 0.5,
-    social_cultural FLOAT DEFAULT 0.5,
-    entrepreneurship FLOAT DEFAULT 0.5,
-    sports_fitness FLOAT DEFAULT 0.5,
-    arts_music FLOAT DEFAULT 0.5,
-    volunteering_community FLOAT DEFAULT 0.5,
-    food_dining FLOAT DEFAULT 0.5,
-    travel_adventure FLOAT DEFAULT 0.5,
-    health_wellness FLOAT DEFAULT 0.5,
-    environment_sustainability FLOAT DEFAULT 0.5,
-    gaming_esports FLOAT DEFAULT 0.5,
+    tech_innovation FLOAT DEFAULT 0.077,
+    career_networking FLOAT DEFAULT 0.077,
+    academic_workshops FLOAT DEFAULT 0.077,
+    social_cultural FLOAT DEFAULT 0.077,
+    entrepreneurship FLOAT DEFAULT 0.077,
+    sports_fitness FLOAT DEFAULT 0.077,
+    arts_music FLOAT DEFAULT 0.077,
+    volunteering_community FLOAT DEFAULT 0.077,
+    food_dining FLOAT DEFAULT 0.077,
+    travel_adventure FLOAT DEFAULT 0.077,
+    health_wellness FLOAT DEFAULT 0.077,
+    environment_sustainability FLOAT DEFAULT 0.077,
+    gaming_esports FLOAT DEFAULT 0.077,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     UNIQUE(user_id)

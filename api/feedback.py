@@ -79,14 +79,18 @@ class handler(BaseHTTPRequestHandler):
                 
                 if should_update_prefs and category and category != 'general':
                     try:
+                        # Uniform baseline: 1/13 ≈ 0.077
+                        UNIFORM_BASELINE = 1.0 / 13.0
                         prefs = supabase.table('user_preferences').select('*').eq('user_id', user_id).limit(1).execute()
                         
                         if prefs.data:
-                            current_score = prefs.data[0].get(category, 0.5)
-                            new_score = min(1.0, current_score + 0.1) if action == 'like' else max(0.0, current_score - 0.1)
+                            current_score = prefs.data[0].get(category, UNIFORM_BASELINE)
+                            # Adjust by 0.05 increments (smaller steps for probability-like scores)
+                            new_score = min(1.0, current_score + 0.05) if action == 'like' else max(0.0, current_score - 0.05)
                             supabase.table('user_preferences').update({category: new_score}).eq('user_id', user_id).execute()
                         else:
-                            new_prefs = {'user_id': user_id, category: 0.7 if action == 'like' else 0.3}
+                            # New user: start with uniform baseline, bump liked category
+                            new_prefs = {'user_id': user_id, category: UNIFORM_BASELINE + 0.1 if action == 'like' else max(0.0, UNIFORM_BASELINE - 0.05)}
                             supabase.table('user_preferences').insert(new_prefs).execute()
                     except Exception as e:
                         print(f"Error updating preferences: {e}")
