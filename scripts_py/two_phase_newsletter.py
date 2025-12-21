@@ -95,14 +95,14 @@ def load_posts() -> List[Dict[str, Any]]:
 
 def is_new_recipient(user: Dict[str, Any]) -> bool:
     """Determine if a user should receive the two-phase onboarding flow."""
-    is_new_flag = user.get("is_new_receipient")
+    is_new_flag = user.get("is_new_recipient")
     first_sent_at = user.get("first_newsletter_sent_at")
     return bool(is_new_flag) or not first_sent_at
 
 
 def mark_user_onboarded(user: Dict[str, Any]) -> None:
     """Mark a user as no longer new after the initial newsletter."""
-    payload: Dict[str, Any] = {"is_new_receipient": False}
+    payload: Dict[str, Any] = {"is_new_recipient": False}
     if not user.get("first_newsletter_sent_at"):
         payload["first_newsletter_sent_at"] = datetime.now(timezone.utc).isoformat()
     try:
@@ -327,7 +327,7 @@ def run_two_phase_newsletter(delay_minutes: int = 5):
     
     # Get users
     users_resp = supabase.table("users").select(
-        "id,email,name,is_new_receipient,first_newsletter_sent_at"
+        "id,email,name,is_new_recipient,first_newsletter_sent_at"
     ).execute()
     ensure_ok(users_resp, action="select users")
     users = users_resp.data or []
