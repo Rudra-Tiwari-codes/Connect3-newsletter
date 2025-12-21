@@ -1,6 +1,11 @@
-"""Event scoring and ranking for Connect3 (Python-first implementation)."""
+"""Event scoring and ranking for Connect3 (Python-first implementation).
 
-from datetime import datetime, timezone
+Includes time decay for user preferences: recent interactions are weighted
+more heavily than older ones using exponential decay.
+"""
+
+import math
+from datetime import datetime, timezone, timedelta
 from typing import Any, Dict, List, Optional
 
 from .supabase_client import ensure_ok, supabase
@@ -8,6 +13,7 @@ from .supabase_client import ensure_ok, supabase
 CLUSTER_MATCH_WEIGHT = 50
 MAX_URGENCY_SCORE = 30
 DEFAULT_CATEGORY_SCORE = 0.5
+DECAY_HALF_LIFE_DAYS = 30.0  # Interaction weight halves every 30 days
 
 
 def _parse_date(value: str) -> Optional[datetime]:
@@ -17,10 +23,112 @@ def _parse_date(value: str) -> Optional[datetime]:
     return None
 
 
-def _cluster_match(event: Dict[str, Any], prefs: Dict[str, Any]) -> float:
+def _compute_time_decayed_preferences(
+    user_id: str,
+    half_life_days: float = DECAY_HALF_LIFE_DAYS
+) -> Dict[str, float]:
+  """
+  Compute category preferences with time decay from interaction history.
+  
+  Recent interactions contribute more to category scores than older ones.
+  Uses exponential decay: weight = e^(-λ × days_old)
+  
+  Returns:
+      Dict mapping category names to scores (0.0 to 1.0)
+  """
+  decay_lambda = math.log(2) / half_life_days
+  now = datetime.now(timezone.utc)
+  
+  # Fetch interactions with timestamps and event categories
+  interactions_resp = (
+    supabase.table("interactions")
+    .select("event_id, interaction_type, created_at")
+    .eq("user_id", user_id)
+    .execute()
+  )
+  ensure_ok(interactions_resp, action="select interactions")
+  interactions = interactions_resp.data or []
+  
+  if not interactions:
+    return {}  # Will fall back to stored preferences
+  
+  # Get event categories for these interactions
+  event_ids = [i["event_id"] for i in interactions if i.get("event_id")]
+  if not event_ids:
+    return {}
+  
+  events_resp = (
+    supabase.table("event_embeddings")
+    .select("event_id, category")
+    .in_("event_id", event_ids)
+    .execute()
+  )
+  ensure_ok(events_resp, action="select event_embeddings")
+  event_categories = {e["event_id"]: e.get("category") for e in (events_resp.data or [])}
+  
+  # Compute time-decayed scores per category
+  category_scores: Dict[str, float] = {}
+  category_weights: Dict[str, float] = {}
+  
+  base_weights = {"like": 1.0, "click": 0.5, "dislike": -0.5}
+  
+  for interaction in interactions:
+    category = event_categories.get(interaction.get("event_id"))
+    if not category:
+      continue
+    
+    # Calculate time decay
+    created_at_str = interaction.get("created_at")
+    time_decay = 1.0
+    if created_at_str:
+      try:
+        created_at = datetime.fromisoformat(created_at_str.replace("Z", "+00:00"))
+        days_old = (now - created_at).total_seconds() / 86400
+        time_decay = math.exp(-decay_lambda * days_old)
+      except Exception:
+        pass
+    
+    # Apply weight
+    base_weight = base_weights.get(interaction.get("interaction_type"), 0.0)
+    weighted_score = base_weight * time_decay
+    
+    if category not in category_scores:
+      category_scores[category] = 0.0
+      category_weights[category] = 0.0
+    
+    category_scores[category] += weighted_score
+    category_weights[category] += abs(time_decay)  # Track total weight for normalization
+  
+  # Normalize to 0.0-1.0 range (sigmoid-like transformation)
+  # Score of 0 -> 0.5, positive -> toward 1.0, negative -> toward 0.0
+  result: Dict[str, float] = {}
+  for cat, score in category_scores.items():
+    total_weight = category_weights.get(cat, 1.0)
+    if total_weight > 0:
+      normalized = score / total_weight  # Range roughly -1 to 1
+      # Transform to 0-1 range: (normalized + 1) / 2, clamped
+      result[cat] = max(0.0, min(1.0, (normalized + 1) / 2))
+    else:
+      result[cat] = DEFAULT_CATEGORY_SCORE
+  
+  return result
+
+
+def _cluster_match(event: Dict[str, Any], prefs: Dict[str, Any], decayed_prefs: Dict[str, float]) -> float:
+  """
+  Get preference score for event category.
+  
+  Uses time-decayed preferences if available, otherwise falls back to stored preferences.
+  """
   category = event.get("category")
   if not category:
     return DEFAULT_CATEGORY_SCORE
+  
+  # Prefer time-decayed score if available
+  if category in decayed_prefs:
+    return decayed_prefs[category]
+  
+  # Fall back to stored preferences
   val = prefs.get(category)
   return float(val) if isinstance(val, (int, float)) else DEFAULT_CATEGORY_SCORE
 
@@ -45,6 +153,9 @@ def rank_events_for_user(user_id: str, limit: int = 10) -> List[Dict[str, Any]]:
   if not prefs_resp.data:
     raise RuntimeError(f"User preferences not found: {user_id}")
   prefs = prefs_resp.data[0]
+  
+  # Compute time-decayed preferences from interaction history
+  decayed_prefs = _compute_time_decayed_preferences(user_id)
 
   events_resp = (
     supabase.table("events")
@@ -59,7 +170,7 @@ def rank_events_for_user(user_id: str, limit: int = 10) -> List[Dict[str, Any]]:
 
   ranked = []
   for evt in events:
-    cluster_match = _cluster_match(evt, prefs)
+    cluster_match = _cluster_match(evt, prefs, decayed_prefs)
     urgency = _urgency_score(evt)
     score = cluster_match * CLUSTER_MATCH_WEIGHT + urgency
     ranked.append({**evt, "score": score, "cluster_match": cluster_match, "urgency_score": urgency})
