@@ -327,7 +327,7 @@ def run_two_phase_newsletter(delay_minutes: int = 5):
     
     # Get users
     users_resp = supabase.table("users").select(
-        "id,email,name,is_new_recipient,first_newsletter_sent_at"
+        "id,email,name,is_new_recipient,first_newsletter_sent_at,is_unsubscribed"
     ).execute()
     ensure_ok(users_resp, action="select users")
     users = users_resp.data or []
@@ -336,6 +336,9 @@ def run_two_phase_newsletter(delay_minutes: int = 5):
     returning_users = []
     for user in users:
         if not user.get("email"):
+            continue
+        if user.get("is_unsubscribed"):
+            print(f"Skipping unsubscribed user: {user.get('email')}")
             continue
         if is_new_recipient(user):
             new_users.append(user)

@@ -62,6 +62,9 @@ class EmailDeliveryService:
     user_email = user.get("email")
     if not user_email:
       raise RuntimeError(f"User {user_id} has no email address")
+    if user.get("is_unsubscribed"):
+      print(f"Skipping unsubscribed user: {user_email}")
+      return
 
     html = generate_personalized_email(user, events, FEEDBACK_URL)
     subject = f"Your Weekly Event Picks - {len(events)} Events Curated For You"
