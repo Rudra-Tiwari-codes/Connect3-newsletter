@@ -2,7 +2,14 @@
 
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
-from urllib.parse import quote
+from urllib.parse import quote, urlparse
+import hashlib
+import hmac
+
+from .config import get_env
+
+
+UNSUBSCRIBE_TOKEN_SECRET = get_env("UNSUBSCRIBE_TOKEN_SECRET")
 
 
 def format_category(category: Optional[str]) -> str:
@@ -11,11 +18,35 @@ def format_category(category: Optional[str]) -> str:
   return " ".join(word.capitalize() for word in category.split("_"))
 
 
+def _expected_unsubscribe_token(user_id: str, secret: str) -> str:
+  mac = hmac.new(secret.encode("utf-8"), user_id.encode("utf-8"), hashlib.sha256)
+  return mac.hexdigest()
+
+
+def _tracking_base_from_feedback_url(feedback_base_url: str) -> str:
+  parsed = urlparse(feedback_base_url)
+  if parsed.scheme and parsed.netloc:
+    return f"{parsed.scheme}://{parsed.netloc}"
+  return "https://connect3-newsletter.vercel.app"
+
+
 def generate_personalized_email(user: Dict[str, Any], events: List[Dict[str, Any]], feedback_base_url: str) -> str:
   cards = []
   
   # Capture email send timestamp for time decay tracking
   email_sent_at = datetime.now(timezone.utc).isoformat()
+
+  tracking_base = _tracking_base_from_feedback_url(feedback_base_url)
+  user_id = user.get('id')
+
+  unsubscribe_html = ""
+  if user_id:
+    if UNSUBSCRIBE_TOKEN_SECRET:
+      token = _expected_unsubscribe_token(user_id, UNSUBSCRIBE_TOKEN_SECRET)
+      unsubscribe_url = f"{tracking_base}/unsubscribe?uid={user_id}&token={token}"
+    else:
+      unsubscribe_url = f"{tracking_base}/unsubscribe?uid={user_id}"
+    unsubscribe_html = f'<p style="margin:6px 0 0 0;"><a href="{unsubscribe_url}" style="color:#6b7280;">Unsubscribe</a></p>'
   
   for evt in events:
     when = evt.get("event_date") or evt.get("timestamp")
@@ -29,11 +60,8 @@ def generate_personalized_email(user: Dict[str, Any], events: List[Dict[str, Any
     # Recommender returns 'event_id', all_posts.json uses 'id'
     event_id = evt.get('event_id') or evt.get('id') or 'unknown'
     category = evt.get('category') or 'general'
-    user_id = user.get('id')
-    
     # Tracking API stores the interaction then redirects to clean connect3.app URL
     # Include sent timestamp for 15-day time decay enforcement
-    tracking_base = "https://connect3-newsletter.vercel.app"
     sent_param = quote(email_sent_at)
     like_url = f"{tracking_base}/feedback?uid={user_id}&eid={event_id}&cat={category}&action=like&sent={sent_param}"
     dislike_url = f"{tracking_base}/feedback?uid={user_id}&eid={event_id}&cat={category}&action=dislike&sent={sent_param}"
@@ -72,6 +100,7 @@ def generate_personalized_email(user: Dict[str, Any], events: List[Dict[str, Any
     </div>
     <div style="background:#f9fafb; padding:16px; text-align:center; color:#6b7280; font-size:12px;">
       <p style="margin:0;">Connect3 Newsletter</p>
+      {unsubscribe_html}
     </div>
   </div>
 </body>
