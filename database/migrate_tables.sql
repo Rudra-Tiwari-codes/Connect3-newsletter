@@ -105,3 +105,9 @@ SELECT table_name FROM information_schema.tables
 WHERE table_schema = 'public' 
 AND table_name IN ('events', 'users', 'interactions', 'event_embeddings', 'user_preferences', 'email_logs')
 ORDER BY table_name;
+
+
+ALTER TABLE public.users
+  ADD COLUMN IF NOT EXISTS is_unsubscribed BOOLEAN DEFAULT FALSE,
+  ADD COLUMN IF NOT EXISTS unsubscribed_at TIMESTAMPTZ;
+  

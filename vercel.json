@@ -4,12 +4,20 @@
         {
             "src": "api/feedback.py",
             "use": "@vercel/python"
+        },
+        {
+            "src": "api/unsubscribe.py",
+            "use": "@vercel/python"
         }
     ],
     "routes": [
         {
             "src": "/feedback(.*)",
             "dest": "api/feedback.py"
+        },
+        {
+            "src": "/unsubscribe(.*)",
+            "dest": "api/unsubscribe.py"
         }
     ]
 }
