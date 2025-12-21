@@ -1,9 +1,13 @@
 """
 Vercel Serverless Function for email click tracking.
 Stores the interaction then redirects to connect3.app
+
+Time Decay Policy: Clicks on newsletters older than 15 days
+do NOT update user preferences (prevents stale data from skewing recommendations).
 """
 from http.server import BaseHTTPRequestHandler
 from urllib.parse import parse_qs, urlparse
+from datetime import datetime, timezone, timedelta
 import json
 import os
 
@@ -13,9 +17,29 @@ from supabase import create_client
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_KEY") or os.environ.get("SUPABASE_KEY")
 
+# Time decay: clicks older than this many days don't affect preferences
+PREFERENCE_DECAY_DAYS = 15
+
 supabase = None
 if SUPABASE_URL and SUPABASE_KEY:
     supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+
+def is_within_decay_window(email_sent_at: str) -> bool:
+    """
+    Check if the email was sent within the decay window.
+    Returns True if interaction should update preferences, False otherwise.
+    """
+    if not email_sent_at:
+        return True  # No timestamp = allow update (backwards compatibility)
+    
+    try:
+        sent_date = datetime.fromisoformat(email_sent_at.replace("Z", "+00:00"))
+        now = datetime.now(timezone.utc)
+        age = now - sent_date
+        return age <= timedelta(days=PREFERENCE_DECAY_DAYS)
+    except Exception:
+        return True  # Parse error = allow update (fail-safe)
 
 
 class handler(BaseHTTPRequestHandler):
@@ -28,6 +52,7 @@ class handler(BaseHTTPRequestHandler):
         event_id = params.get('eid', [None])[0]
         category = params.get('cat', ['general'])[0]
         action = params.get('action', ['like'])[0]
+        email_sent_at = params.get('sent', [None])[0]  # Timestamp when email was sent
         
         # Store the interaction if we have required data
         if supabase and user_id and event_id:
@@ -49,8 +74,10 @@ class handler(BaseHTTPRequestHandler):
                         'interaction_type': action
                     }).execute()
                 
-                # Update user preferences for the category
-                if category and category != 'general':
+                # TIME DECAY CHECK: Only update preferences if within 15-day window
+                should_update_prefs = is_within_decay_window(email_sent_at)
+                
+                if should_update_prefs and category and category != 'general':
                     try:
                         prefs = supabase.table('user_preferences').select('*').eq('user_id', user_id).limit(1).execute()
                         
@@ -63,6 +90,8 @@ class handler(BaseHTTPRequestHandler):
                             supabase.table('user_preferences').insert(new_prefs).execute()
                     except Exception as e:
                         print(f"Error updating preferences: {e}")
+                elif not should_update_prefs:
+                    print(f"Skipping preference update: email older than {PREFERENCE_DECAY_DAYS} days")
                         
             except Exception as e:
                 print(f"Error storing interaction: {e}")

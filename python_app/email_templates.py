@@ -1,7 +1,8 @@
 """Simple HTML email templates for Connect3 newsletters."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
+from urllib.parse import quote
 
 
 def format_category(category: Optional[str]) -> str:
@@ -12,6 +13,10 @@ def format_category(category: Optional[str]) -> str:
 
 def generate_personalized_email(user: Dict[str, Any], events: List[Dict[str, Any]], feedback_base_url: str) -> str:
   cards = []
+  
+  # Capture email send timestamp for time decay tracking
+  email_sent_at = datetime.now(timezone.utc).isoformat()
+  
   for evt in events:
     when = evt.get("event_date") or evt.get("timestamp")
     when_str = ""
@@ -27,9 +32,11 @@ def generate_personalized_email(user: Dict[str, Any], events: List[Dict[str, Any
     user_id = user.get('id')
     
     # Tracking API stores the interaction then redirects to clean connect3.app URL
+    # Include sent timestamp for 15-day time decay enforcement
     tracking_base = "https://connect3-newsletter.vercel.app"
-    like_url = f"{tracking_base}/feedback?uid={user_id}&eid={event_id}&cat={category}&action=like"
-    dislike_url = f"{tracking_base}/feedback?uid={user_id}&eid={event_id}&cat={category}&action=dislike"
+    sent_param = quote(email_sent_at)
+    like_url = f"{tracking_base}/feedback?uid={user_id}&eid={event_id}&cat={category}&action=like&sent={sent_param}"
+    dislike_url = f"{tracking_base}/feedback?uid={user_id}&eid={event_id}&cat={category}&action=dislike&sent={sent_param}"
     
     cards.append(
       f"""
