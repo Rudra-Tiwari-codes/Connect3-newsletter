@@ -9,6 +9,9 @@ from typing import Callable, TypeVar
 from openai import OpenAI, AuthenticationError, PermissionDeniedError, BadRequestError
 
 from .config import get_env, require_env
+from .logger import get_logger
+
+logger = get_logger(__name__)
 
 OPENAI_API_KEY = require_env("OPENAI_API_KEY")
 OPENAI_TIMEOUT_SEC = max(1, int(get_env("OPENAI_TIMEOUT_SEC", "30") or "30"))
@@ -34,6 +37,6 @@ def with_retry(call: Callable[[], T], *, label: str) -> T:
       if attempt >= OPENAI_MAX_RETRIES:
         raise
       sleep_for = 0.5 * attempt + random.random() * 0.2
-      print(f"{label} failed (attempt {attempt}): {exc}. Retrying in {sleep_for:.1f}s")
+      logger.warning(f"{label} failed (attempt {attempt}): {exc}. Retrying in {sleep_for:.1f}s")
       time.sleep(sleep_for)
   raise RuntimeError(f"{label} failed after {OPENAI_MAX_RETRIES} attempts")

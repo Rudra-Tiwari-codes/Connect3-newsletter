@@ -8,7 +8,10 @@ from typing import Any, Dict, List, Mapping
 
 from .config import get_env
 from .email_templates import generate_personalized_email
+from .logger import get_logger
 from .supabase_client import ensure_ok, supabase
+
+logger = get_logger(__name__)
 
 
 GMAIL_USER = get_env("GMAIL_USER")
@@ -47,10 +50,10 @@ class EmailDeliveryService:
         success += 1
         time.sleep(0.1)
       except Exception as exc:
-        print(f"Failed to send email to user {user_id}: {exc}")
+        logger.error(f"Failed to send email to user {user_id}: {exc}")
         failed += 1
 
-    print(f"Email delivery complete: {success} sent, {failed} failed")
+    logger.info(f"Email delivery complete: {success} sent, {failed} failed")
 
   def send_personalized_email(self, user_id: str, events: List[Dict[str, Any]]) -> None:
     user_resp = supabase.table("users").select("*").eq("id", user_id).limit(1).execute()
@@ -79,8 +82,8 @@ class EmailDeliveryService:
       try:
         ensure_ok(log_resp, action="insert email_logs (sent)")
       except Exception as log_exc:
-        print(f"Failed to log email success for user {user_id}: {log_exc}")
-      print(f"Email sent successfully to {user_email}")
+        logger.warning(f"Failed to log email success for user {user_id}: {log_exc}")
+      logger.info(f"Email sent successfully to {user_email}")
     except Exception as exc:
       log_resp = supabase.table("email_logs").insert({
         "user_id": user_id,
@@ -91,10 +94,10 @@ class EmailDeliveryService:
       try:
         ensure_ok(log_resp, action="insert email_logs (failed)")
       except Exception as log_exc:
-        print(f"Failed to log email failure for user {user_id}: {log_exc}")
+        logger.warning(f"Failed to log email failure for user {user_id}: {log_exc}")
       raise
 
   def send_test_email(self, to_email: str) -> None:
     html = "<h1>Test Email</h1><p>This is a test email from the Event Newsletter System.</p>"
     send_email(to_email, "Test Email - Event Newsletter System", html)
-    print(f"Test email sent to {to_email}")
+    logger.info(f"Test email sent to {to_email}")

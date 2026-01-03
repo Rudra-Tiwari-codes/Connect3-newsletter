@@ -9,8 +9,12 @@ from pathlib import Path
 from typing import Dict, List, Mapping, Optional, Sequence
 
 from .embeddings import EMBEDDING_DIM, embed_user
+from .logger import get_logger
+from .pgvector_search import is_pgvector_available, search_similar_events
 from .supabase_client import ensure_ok, supabase
 from .vector_index import VectorIndex
+
+logger = get_logger(__name__)
 
 
 @dataclass
@@ -49,22 +53,27 @@ class TwoTowerRecommender:
     self.config = RecommendationConfig.from_overrides(config)
     self.index = index or VectorIndex(EMBEDDING_DIM)
     self._events_cache: Dict[str, Dict[str, object]] = {}
+    self._use_pgvector = is_pgvector_available()
+    if self._use_pgvector:
+      logger.info("Using pgvector for similarity search")
+    else:
+      logger.info("Using in-memory NumPy for similarity search")
     self._load_events_from_json()
 
   def _load_events_from_json(self) -> None:
     """Load event details from all_posts.json into memory cache."""
     json_path = Path(__file__).resolve().parents[1] / "all_posts.json"
     if not json_path.exists():
-      print(f"Warning: {json_path} not found, event details will be limited")
+      logger.warning(f"{json_path} not found, event details will be limited")
       return
     try:
       with open(json_path, 'r', encoding='utf-8') as f:
         posts = json.load(f)
       for post in posts:
         self._events_cache[post['id']] = post
-      print(f"Loaded {len(self._events_cache)} events from all_posts.json")
+      logger.info(f"Loaded {len(self._events_cache)} events from all_posts.json")
     except Exception as e:
-      print(f"Warning: Failed to load all_posts.json: {e}")
+      logger.error(f"Failed to load all_posts.json: {e}")
 
   def load_event_index(self) -> int:
     """Load all event embeddings from Supabase into the in-memory index."""
@@ -96,9 +105,6 @@ class TwoTowerRecommender:
     return len(rows)
 
   def get_recommendations(self, user_id: str) -> List[Dict[str, object]]:
-    if self.index.size() == 0:
-      self.load_event_index()
-
     user_vector = embed_user(user_id)
     if not user_vector:
       return []
@@ -109,9 +115,21 @@ class TwoTowerRecommender:
     feedback = feedback_resp.data or []
     exclude_ids = {row["event_id"] for row in feedback if "event_id" in row}
 
-
     candidate_count = self.config.top_k * self.config.candidate_multiplier
-    candidates = self.index.search(user_vector, top_k=candidate_count, exclude_ids=exclude_ids)
+    
+    # Try pgvector first, fall back to in-memory index
+    if self._use_pgvector:
+      candidates = search_similar_events(
+        user_vector,
+        top_k=candidate_count,
+        threshold=0.3,
+        exclude_ids=exclude_ids
+      )
+    else:
+      if self.index.size() == 0:
+        self.load_event_index()
+      candidates = self.index.search(user_vector, top_k=candidate_count, exclude_ids=exclude_ids)
+    
     if not candidates:
       return []
 
@@ -140,7 +158,7 @@ class TwoTowerRecommender:
       try:
         results[uid] = self.get_recommendations(uid)
       except Exception as exc:
-        print(f"Failed to get recommendations for user {uid}: {exc}")
+        logger.error(f"Failed to get recommendations for user {uid}: {exc}")
         results[uid] = []
     return results
 

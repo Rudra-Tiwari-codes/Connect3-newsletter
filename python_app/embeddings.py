@@ -5,8 +5,11 @@ import re
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
+from .logger import get_logger
 from .openai_client import client, with_retry
 from .supabase_client import ensure_ok, supabase
+
+logger = get_logger(__name__)
 
 # Event categories for Connect3 - standardized across all modules
 CONNECT3_CATEGORIES = [
@@ -97,7 +100,7 @@ def classify_event_category(caption: str) -> Optional[str]:
     category = (resp.choices[0].message.content or "").strip().lower()
     return category if category in CONNECT3_CATEGORIES else None
   except Exception as exc:  # pragma: no cover - defensive logging
-    print(f"Error classifying event: {exc}")
+    logger.error(f"Error classifying event: {exc}")
     return None
 
 
