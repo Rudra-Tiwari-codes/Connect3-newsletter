@@ -9,6 +9,9 @@ from datetime import datetime, timezone, timedelta
 from typing import Any, Dict, List, Optional
 
 from .supabase_client import ensure_ok, supabase
+from .logger import get_logger
+
+logger = get_logger(__name__)
 
 # 13 categories total - uniform distribution baseline
 NUM_CATEGORIES = 13
@@ -89,7 +92,7 @@ def _compute_time_decayed_preferences(
         days_old = (now - created_at).total_seconds() / 86400
         time_decay = math.exp(-decay_lambda * days_old)
       except Exception:
-        pass
+        logger.warning(f"Failed to parse created_at timestamp: {created_at_str}")
     
     # Apply weight
     base_weight = base_weights.get(interaction.get("interaction_type"), 0.0)
