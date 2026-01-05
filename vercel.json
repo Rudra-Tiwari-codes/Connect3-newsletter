@@ -2,15 +2,23 @@
     "version": 2,
     "builds": [
         {
-            "src": "api/feedback.py",
-            "use": "@vercel/python"
+            "src": "web/**",
+            "use": "@vercel/static"
         },
         {
-            "src": "api/unsubscribe.py",
+            "src": "api/*.py",
             "use": "@vercel/python"
         }
     ],
     "routes": [
+        {
+            "src": "/",
+            "dest": "/web/index.html"
+        },
+        {
+            "src": "/web/(.*)",
+            "dest": "/web/$1"
+        },
         {
             "src": "/feedback(.*)",
             "dest": "api/feedback.py"
