@@ -11,10 +11,20 @@
 -- 3. interactions (id, user_id, event_id, interaction_type, created_at)
 
 -- ============================================
--- ADD top_categories COLUMN TO USERS TABLE
+-- ADD MISSING COLUMNS TO USERS TABLE
 -- ============================================
 -- This stores user's top 3 preferred categories as a JSON array
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS top_categories JSONB DEFAULT '[]'::jsonb;
+
+-- New columns for two-phase newsletter logic
+ALTER TABLE public.users 
+ADD COLUMN IF NOT EXISTS is_new_recipient BOOLEAN DEFAULT TRUE,
+ADD COLUMN IF NOT EXISTS first_newsletter_sent_at TIMESTAMPTZ;
+
+-- Unsubscribe tracking
+ALTER TABLE public.users
+ADD COLUMN IF NOT EXISTS is_unsubscribed BOOLEAN DEFAULT FALSE,
+ADD COLUMN IF NOT EXISTS unsubscribed_at TIMESTAMPTZ;
 
 -- ============================================
 -- NEW TABLES TO CREATE
@@ -123,9 +133,3 @@ SELECT table_name FROM information_schema.tables
 WHERE table_schema = 'public' 
 AND table_name IN ('events', 'users', 'interactions', 'event_embeddings', 'user_preferences', 'email_logs')
 ORDER BY table_name;
-
-
-ALTER TABLE public.users
-  ADD COLUMN IF NOT EXISTS is_unsubscribed BOOLEAN DEFAULT FALSE,
-  ADD COLUMN IF NOT EXISTS unsubscribed_at TIMESTAMPTZ;
-  
