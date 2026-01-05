@@ -37,8 +37,14 @@ ALTER TABLE public.event_embeddings ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Allow read event_embeddings" ON public.event_embeddings
     FOR SELECT USING (true);
 
-CREATE POLICY "Allow all event_embeddings" ON public.event_embeddings
-    FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Service role insert event_embeddings" ON public.event_embeddings
+    FOR INSERT WITH CHECK (current_setting('request.jwt.claims', true)::json->>'role' = 'service_role');
+
+CREATE POLICY "Service role update event_embeddings" ON public.event_embeddings
+    FOR UPDATE USING (current_setting('request.jwt.claims', true)::json->>'role' = 'service_role');
+
+CREATE POLICY "Service role delete event_embeddings" ON public.event_embeddings
+    FOR DELETE USING (current_setting('request.jwt.claims', true)::json->>'role' = 'service_role');
 
 -- ============================================
 
@@ -72,8 +78,14 @@ ALTER TABLE public.user_preferences ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can view own preferences" ON public.user_preferences
     FOR SELECT USING (auth.uid() = user_id);
 
-CREATE POLICY "Allow all user_preferences" ON public.user_preferences
-    FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Service role insert user_preferences" ON public.user_preferences
+    FOR INSERT WITH CHECK (current_setting('request.jwt.claims', true)::json->>'role' = 'service_role');
+
+CREATE POLICY "Service role update user_preferences" ON public.user_preferences
+    FOR UPDATE USING (current_setting('request.jwt.claims', true)::json->>'role' = 'service_role');
+
+CREATE POLICY "Service role delete user_preferences" ON public.user_preferences
+    FOR DELETE USING (current_setting('request.jwt.claims', true)::json->>'role' = 'service_role');
 
 -- ============================================
 
@@ -95,8 +107,14 @@ ALTER TABLE public.email_logs ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Allow read email_logs" ON public.email_logs
     FOR SELECT USING (true);
 
-CREATE POLICY "Allow all email_logs" ON public.email_logs
-    FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Service role insert email_logs" ON public.email_logs
+    FOR INSERT WITH CHECK (current_setting('request.jwt.claims', true)::json->>'role' = 'service_role');
+
+CREATE POLICY "Service role update email_logs" ON public.email_logs
+    FOR UPDATE USING (current_setting('request.jwt.claims', true)::json->>'role' = 'service_role');
+
+CREATE POLICY "Service role delete email_logs" ON public.email_logs
+    FOR DELETE USING (current_setting('request.jwt.claims', true)::json->>'role' = 'service_role');
 
 -- ============================================
 -- VERIFY ALL TABLES EXIST
