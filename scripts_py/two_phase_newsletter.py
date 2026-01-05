@@ -374,26 +374,54 @@ def run_two_phase_newsletter(delay_minutes: int = 5):
             print("  Phase 1 sent: 9 random events")
 
         print(f"\n{'='*50}")
-        print(f"WAITING {delay_minutes} MINUTES FOR USER TO SELECT PREFERENCES...")
+        print(f"WAITING UP TO {delay_minutes} MINUTES...")
+        print("Scaning for interactions every 10 seconds to send Phase 2 immediately.")
         print(f"{'='*50}")
-        print("(Click 'Interested' on events you like in the email!)")
 
-        # Wait for user to interact
-        for remaining in range(delay_minutes * 60, 0, -30):
-            mins = remaining // 60
-            secs = remaining % 60
-            print(f"  Time remaining: {mins}m {secs}s")
-            time.sleep(30)
+        # Track who has been sent Phase 2 to avoid double sending
+        phase2_sent_users = set()
+        
+        # Poll loop
+        poll_interval = 10
+        max_duration = delay_minutes * 60
+        start_time = time.time()
+        
+        while (time.time() - start_time) < max_duration:
+            # Check for interactions for ALL pending users
+            pending_users = [u for u in new_users if u["id"] not in phase2_sent_users]
+            if not pending_users:
+                print("  All users have interacted! Finishing early.")
+                break
+                
+            elapsed = int(time.time() - start_time)
+            print(f"  [{elapsed}s / {max_duration}s] Checking interactions for {len(pending_users)} users...")
+            
+            for user in pending_users:
+                # Check if user has ANY interactions since Phase 1 started
+                # We can optimize this by checking timestamps, but counting is safe enough for this scale
+                resp = supabase.table("interactions").select("count", count="exact").eq("user_id", user["id"]).execute()
+                
+                # If they have interacted (count > 0), trigger Phase 2 NOW
+                if resp.count and resp.count > 0:
+                    print(f"\n  >>> INTERACTION DETECTED for {user['email']}!")
+                    phase1_ids = phase1_sent.get(user["id"], [])
+                    send_phase2_preference_newsletter(user, posts, phase1_ids)
+                    print("  Phase 2 sent: Personalized events (Instant)")
+                    phase2_sent_users.add(user["id"])
+            
+            time.sleep(poll_interval)
 
         print(f"\n{'='*50}")
-        print("PHASE 2: PREFERENCE-BASED NEWSLETTER (NEW USERS)")
+        print("TIMEOUT REACHED - SENDING DEFAULTS TO REMAINING USERS")
         print(f"{'='*50}")
 
-        for user in new_users:
-            print(f"\nProcessing: {user['email']}")
+        # Process anyone left who hasn't interacted
+        remaining_users = [u for u in new_users if u["id"] not in phase2_sent_users]
+        for user in remaining_users:
+            print(f"\nProcessing (Default): {user['email']}")
             phase1_ids = phase1_sent.get(user["id"], [])
             send_phase2_preference_newsletter(user, posts, phase1_ids)
-            print("  Phase 2 sent: Personalized events")
+            print("  Phase 2 sent: Default Recommendation events")
     
     print(f"\n{'='*50}")
     print("TWO-PHASE NEWSLETTER COMPLETE!")
