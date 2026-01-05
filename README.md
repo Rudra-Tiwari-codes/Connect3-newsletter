@@ -1,5 +1,7 @@
 # Connect3 - Event Recommendation System
 
+[![Tests](https://github.com/Rudra-Tiwari-codes/Connect3-newsletter/actions/workflows/test.yml/badge.svg)](https://github.com/Rudra-Tiwari-codes/Connect3-newsletter/actions/workflows/test.yml)
+
 Personalized university event newsletter system built for DSCubed at the University of Melbourne.
 
 **Created by Nirav and Rudra**
