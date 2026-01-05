@@ -8,7 +8,10 @@ from urllib.parse import parse_qs, urlparse
 from datetime import datetime, timezone
 import hashlib
 import hmac
+import logging
 import os
+
+logger = logging.getLogger(__name__)
 
 from supabase import create_client
 
@@ -59,10 +62,12 @@ class handler(BaseHTTPRequestHandler):
             _send_plain(self, 400, "Missing uid.")
             return
 
-        if UNSUBSCRIBE_TOKEN_SECRET:
-            if not _is_valid_token(user_id, token, UNSUBSCRIBE_TOKEN_SECRET):
-                _send_plain(self, 403, "Invalid or missing token.")
-                return
+        if not UNSUBSCRIBE_TOKEN_SECRET:
+            _send_plain(self, 500, "Unsubscribe token secret not configured.")
+            return
+        if not _is_valid_token(user_id, token, UNSUBSCRIBE_TOKEN_SECRET):
+            _send_plain(self, 403, "Invalid or missing token.")
+            return
 
         if not supabase:
             _send_plain(self, 500, "Supabase not configured.")
@@ -75,7 +80,8 @@ class handler(BaseHTTPRequestHandler):
             }
             supabase.table("users").update(payload).eq("id", user_id).execute()
         except Exception as exc:
-            _send_plain(self, 500, f"Failed to unsubscribe: {exc}")
+            logger.error(f"Unsubscribe failed for user {user_id}: {exc}")
+            _send_plain(self, 500, "An error occurred. Please try again later.")
             return
 
         if UNSUBSCRIBE_REDIRECT_URL:
