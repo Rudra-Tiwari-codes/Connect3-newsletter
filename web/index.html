@@ -401,10 +401,6 @@
     </main>
 
     <script>
-      const SUPABASE_URL = "https://YOUR-PROJECT.supabase.co";
-      const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
-      const TABLE = "users";
-
       const form = document.getElementById("signup-form");
       const statusEl = document.getElementById("form-status");
       const submitBtn = document.getElementById("submit-btn");
@@ -436,38 +432,30 @@
           return;
         }
 
-        if (
-          SUPABASE_URL.includes("SUPABASE_URL") ||
-          SUPABASE_ANON_KEY.includes("SUPABASE_KEY")
-        ) {
-          setStatus("error", "Add your Supabase URL and anon key first.");
-          return;
-        }
-
         submitBtn.disabled = true;
         submitBtn.textContent = "Saving your spot...";
 
-        const endpoint = `${SUPABASE_URL.replace(/\/$/, "")}/rest/v1/${TABLE}`;
+        const endpoint = "/subscribe";
 
         try {
           const response = await fetch(endpoint, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-              apikey: SUPABASE_ANON_KEY,
-              Prefer: "return=minimal",
             },
             body: JSON.stringify({
-              name: `${firstName} ${lastName}`.trim(),
+              firstName,
+              lastName,
               email,
             }),
           });
 
           if (!response.ok) {
-            const errorText = await response.text();
-            console.error("Supabase insert failed:", response.status, errorText);
-            throw new Error("Unable to save your details right now.");
+            const errorPayload = await response.json().catch(() => null);
+            const errorMessage =
+              errorPayload?.error || "Unable to save your details right now.";
+            console.error("Signup failed:", response.status, errorPayload);
+            throw new Error(errorMessage);
           }
 
           setStatus("success", "You are in. Your first issue arrives soon.");
