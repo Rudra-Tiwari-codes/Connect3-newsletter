@@ -1,267 +1,487 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Connect3</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Connect3 Newsletter</title>
+    <meta
+      name="description"
+      content="Join the Connect3 newsletter for weekly product and growth insights."
+    />
+    <link rel="icon" href="favicon.ico" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Space+Grotesk:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+      :root {
+        color-scheme: light;
+        --ink-900: #0f172a;
+        --ink-700: #334155;
+        --ink-600: #475569;
+        --card: rgba(255, 255, 255, 0.82);
+        --stroke: rgba(15, 23, 42, 0.12);
+        --accent: #ff8a3d;
+      }
 
-        :root {
-            --bg: #000000;
-            --fg: #ffffff;
-            --gray: #333333;
-            --light-gray: #666666;
-            --border: #222222;
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Space Grotesk", system-ui, sans-serif;
+        color: var(--ink-900);
+        background: #f8f4ec;
+      }
+
+      .font-display {
+        font-family: "Fraunces", serif;
+      }
+
+      .hero-surface {
+        min-height: 100vh;
+        position: relative;
+        overflow: hidden;
+        background:
+          radial-gradient(
+              1200px circle at 12% 8%,
+              #fff1d9 0%,
+              rgba(255, 241, 217, 0) 60%
+            ),
+          radial-gradient(
+              900px circle at 88% 12%,
+              #d8ecff 0%,
+              rgba(216, 236, 255, 0) 55%
+            ),
+          linear-gradient(160deg, #f7efe6 0%, #f1f6ff 100%);
+      }
+
+      .hero-pattern {
+        position: absolute;
+        inset: 0;
+        background-image: radial-gradient(rgba(17, 24, 39, 0.08) 1px, transparent 1px);
+        background-size: 28px 28px;
+        mask-image: radial-gradient(circle at top, black 0%, transparent 70%);
+        opacity: 0.4;
+        pointer-events: none;
+      }
+
+      .bubble {
+        position: absolute;
+        border-radius: 999px;
+        filter: blur(48px);
+        opacity: 0.7;
+      }
+
+      .bubble.one {
+        top: -96px;
+        right: 24px;
+        width: 260px;
+        height: 260px;
+        background: rgba(255, 215, 166, 0.7);
+      }
+
+      .bubble.two {
+        bottom: 24px;
+        left: 16px;
+        width: 280px;
+        height: 280px;
+        background: rgba(185, 215, 255, 0.6);
+      }
+
+      .container {
+        position: relative;
+        z-index: 1;
+        max-width: 1120px;
+        margin: 0 auto;
+        min-height: 100vh;
+        padding: 72px 24px;
+        display: grid;
+        grid-template-columns: 1.1fr 0.9fr;
+        gap: 56px;
+        align-items: center;
+      }
+
+      .eyebrow {
+        text-transform: uppercase;
+        letter-spacing: 0.32em;
+        font-size: 12px;
+        color: var(--ink-600);
+      }
+
+      .hero-title {
+        font-size: clamp(2.4rem, 2rem + 2vw, 3.6rem);
+        line-height: 1.05;
+        margin: 16px 0 0;
+      }
+
+      .hero-body {
+        font-size: 1.05rem;
+        color: var(--ink-700);
+        max-width: 520px;
+      }
+
+      .pill-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin: 24px 0;
+      }
+
+      .pill {
+        border: 1px solid var(--stroke);
+        background: rgba(255, 255, 255, 0.7);
+        padding: 8px 16px;
+        border-radius: 999px;
+        font-size: 0.85rem;
+        color: var(--ink-700);
+        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+      }
+
+      .social-proof {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 0.9rem;
+        color: var(--ink-600);
+      }
+
+      .avatars {
+        display: flex;
+        margin-right: 4px;
+      }
+
+      .avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 999px;
+        display: grid;
+        place-items: center;
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: #fff;
+        border: 2px solid rgba(255, 255, 255, 0.9);
+        margin-left: -10px;
+      }
+
+      .avatar:first-child {
+        margin-left: 0;
+      }
+
+      .avatar.one {
+        background: #0f172a;
+      }
+      .avatar.two {
+        background: #475569;
+      }
+      .avatar.three {
+        background: #64748b;
+      }
+
+      .card {
+        background: var(--card);
+        border-radius: 28px;
+        border: 1px solid var(--stroke);
+        padding: 32px;
+        box-shadow: 0 24px 40px rgba(15, 23, 42, 0.08);
+        backdrop-filter: blur(10px);
+      }
+
+      .card h2 {
+        margin: 0 0 8px;
+      }
+
+      .card p {
+        margin: 0;
+        color: var(--ink-600);
+        font-size: 0.95rem;
+      }
+
+      .field-row {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+        margin-top: 20px;
+      }
+
+      label {
+        display: grid;
+        gap: 8px;
+        font-size: 0.85rem;
+        color: var(--ink-700);
+      }
+
+      input {
+        border: 1px solid var(--stroke);
+        border-radius: 16px;
+        padding: 12px 14px;
+        font-size: 0.95rem;
+        outline: none;
+        background: rgba(255, 255, 255, 0.9);
+        color: var(--ink-900);
+      }
+
+      input:focus {
+        border-color: transparent;
+        box-shadow: 0 0 0 3px rgba(255, 138, 61, 0.35);
+      }
+
+      button {
+        margin-top: 18px;
+        width: 100%;
+        border: none;
+        border-radius: 16px;
+        background: #0f172a;
+        color: #fff;
+        font-weight: 600;
+        padding: 12px 16px;
+        cursor: pointer;
+        font-size: 0.95rem;
+        transition: transform 200ms ease, background 200ms ease;
+        box-shadow: 0 16px 24px rgba(15, 23, 42, 0.18);
+      }
+
+      button:hover {
+        background: #1e293b;
+        transform: translateY(-2px);
+      }
+
+      button:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .status {
+        margin-top: 14px;
+        font-size: 0.9rem;
+      }
+
+      .status.success {
+        color: #047857;
+      }
+
+      .status.error {
+        color: #dc2626;
+      }
+
+      @keyframes fade-up {
+        from {
+          opacity: 0;
+          transform: translateY(18px);
         }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Inter', sans-serif;
-            -webkit-font-smoothing: antialiased;
+        to {
+          opacity: 1;
+          transform: translateY(0);
         }
+      }
 
-        body {
-            background-color: var(--bg);
-            color: var(--fg);
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 2rem;
+      @keyframes drift {
+        0%,
+        100% {
+          transform: translate3d(0, 0, 0);
         }
+        50% {
+          transform: translate3d(10px, -14px, 0);
+        }
+      }
 
+      .fade-up {
+        animation: fade-up 700ms ease-out both;
+      }
+
+      .stagger-2 {
+        animation-delay: 220ms;
+      }
+
+      .floaty {
+        animation: drift 9s ease-in-out infinite;
+      }
+
+      @media (max-width: 900px) {
         .container {
-            width: 100%;
-            max-width: 400px;
-            animation: fadeIn 0.8s ease-out;
+          grid-template-columns: 1fr;
+          gap: 36px;
         }
 
-        h1 {
-            font-size: 1.5rem;
-            font-weight: 500;
-            margin-bottom: 0.5rem;
-            letter-spacing: -0.02em;
+        .field-row {
+          grid-template-columns: 1fr;
         }
+      }
 
-        p.subtitle {
-            color: var(--light-gray);
-            font-size: 0.95rem;
-            margin-bottom: 2.5rem;
-            line-height: 1.5;
-            font-weight: 300;
+      @media (prefers-reduced-motion: reduce) {
+        .fade-up,
+        .floaty {
+          animation: none;
         }
-
-        .input-group {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-        }
-
-        input {
-            background: transparent;
-            border: 1px solid var(--border);
-            color: var(--fg);
-            padding: 0.8rem 0;
-            font-size: 0.95rem;
-            border-width: 0 0 1px 0;
-            /* Underline only */
-            border-radius: 0;
-            transition: border-color 0.2s;
-            outline: none;
-        }
-
-        input::placeholder {
-            color: var(--gray);
-        }
-
-        input:focus {
-            border-color: var(--fg);
-        }
-
-        button {
-            width: 100%;
-            padding: 1rem;
-            background: var(--fg);
-            color: var(--bg);
-            border: none;
-            font-size: 0.9rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: opacity 0.2s;
-            border-radius: 2px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        button:hover {
-            opacity: 0.9;
-        }
-
-        button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        /* Minimal Status */
-        .status {
-            margin-top: 1.5rem;
-            font-size: 0.85rem;
-            min-height: 1.2em;
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-
-        .status.visible {
-            opacity: 1;
-        }
-
-        .status.success {
-            color: var(--light-gray);
-        }
-
-        /* Keep it subtle */
-        .status.error {
-            color: #ffffff;
-            text-decoration: underline;
-            text-decoration-color: #bd2b2b;
-        }
-
-        /* Minimal Loader */
-        .loader {
-            width: 14px;
-            height: 14px;
-            border: 1px solid var(--bg);
-            border-bottom-color: transparent;
-            border-radius: 50%;
-            animation: rotation 1s linear infinite;
-            display: none;
-        }
-
-        @keyframes rotation {
-            0% {
-                transform: rotate(0deg);
-            }
-
-            100% {
-                transform: rotate(360deg);
-            }
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        button.loading .btn-text {
-            display: none;
-        }
-
-        button.loading .loader {
-            display: block;
-        }
-
-        .footer {
-            margin-top: 3rem;
-            color: var(--gray);
-            font-size: 0.75rem;
-        }
+      }
     </style>
-</head>
+  </head>
+  <body>
+    <main class="hero-surface">
+      <div class="hero-pattern" aria-hidden="true"></div>
+      <div class="bubble one floaty" aria-hidden="true"></div>
+      <div class="bubble two floaty" aria-hidden="true"></div>
 
-<body>
+      <div class="container">
+        <section class="fade-up">
+          <p class="eyebrow">Connect3 Newsletter</p>
+          <h1 class="hero-title font-display">
+            A bi-weekly newsletter to help you stay connected with personalized
+            events and experiences.
+          </h1>
+          <p class="hero-body">
+            Get curated updates, new experiences, and community wins from
+            Connect3. Designed to keep you in the loop without the clutter.
+          </p>
+          <div class="pill-row">
+            <span class="pill">Founder notes</span>
+            <span class="pill">Curated events</span>
+            <span class="pill">Signal over noise</span>
+          </div>
+          <div class="social-proof">
+            <div class="avatars">
+              <span class="avatar one">C3</span>
+              <span class="avatar two">KJ</span>
+              <span class="avatar three">AD</span>
+            </div>
+            <span>Joined by 4,200+ builders this month.</span>
+          </div>
+        </section>
 
-    <div class="container">
-        <h1>Connect3</h1>
-        <p class="subtitle">Curated campus events.<br>Delivered weekly.</p>
-
-        <form id="subscribeForm">
-            <div class="input-group">
-                <input type="text" id="name" placeholder="Name" required autocomplete="off">
-                <input type="email" id="email" placeholder="Email" required autocomplete="off">
+        <section class="card fade-up stagger-2">
+          <form id="signup-form">
+            <div>
+              <h2 class="font-display">Join the list</h2>
+              <p>We send two emails a week. Get started now.</p>
             </div>
 
-            <button type="submit" id="submitBtn">
-                <span class="btn-text">Join Waitlist</span>
-                <span class="loader"></span>
-            </button>
-        </form>
+            <div class="field-row">
+              <label>
+                <span>First name</span>
+                <input
+                  name="firstName"
+                  type="text"
+                  autocomplete="given-name"
+                  placeholder="Taylor"
+                  required
+                />
+              </label>
+              <label>
+                <span>Last name</span>
+                <input
+                  name="lastName"
+                  type="text"
+                  autocomplete="family-name"
+                  placeholder="Jordan"
+                  required
+                />
+              </label>
+            </div>
 
-        <div id="status" class="status"></div>
-    </div>
+            <label style="margin-top: 20px;">
+              <span>Email address</span>
+              <input
+                name="email"
+                type="email"
+                autocomplete="email"
+                placeholder="taylor@company.com"
+                required
+              />
+            </label>
 
-    <div class="footer">
-        &copy; 2026 Connect3
-    </div>
+            <button id="submit-btn" type="submit">Get the next issue</button>
+            <p id="form-status" class="status" aria-live="polite"></p>
+          </form>
+        </section>
+      </div>
+    </main>
 
     <script>
-        // ==========================================
-        // CONFIGURATION
-        // ==========================================
-        const SUPABASE_URL = 'https://proursxexbsidixdoesh.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InByb3Vyc3hleGJzaWRpeGRvZXNoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc1NzM3NzcsImV4cCI6MjA4MzE0OTc3N30.-0oZ29Ce_1n78uEl3Dld5K5QFzMXCPgGMOB-WKrY9qQ';
-        // ==========================================
+      const SUPABASE_URL = "https://YOUR-PROJECT.supabase.co";
+      const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+      const TABLE = "users";
 
-        const { createClient } = supabase;
-        const _supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      const form = document.getElementById("signup-form");
+      const statusEl = document.getElementById("form-status");
+      const submitBtn = document.getElementById("submit-btn");
 
-        const form = document.getElementById('subscribeForm');
-        const btn = document.getElementById('submitBtn');
-        const status = document.getElementById('status');
+      const setStatus = (state, message) => {
+        statusEl.textContent = message;
+        statusEl.className = `status ${state}`.trim();
+      };
 
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
+      const isValidEmail = (value) =>
+        /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 
-            const email = document.getElementById('email').value.trim();
-            const name = document.getElementById('name').value.trim();
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        setStatus("", "");
 
-            if (!email || !name) return;
+        const formData = new FormData(form);
+        const firstName = String(formData.get("firstName") || "").trim();
+        const lastName = String(formData.get("lastName") || "").trim();
+        const email = String(formData.get("email") || "").trim();
 
-            btn.classList.add('loading');
-            btn.disabled = true;
-            status.className = 'status';
-            status.textContent = '';
+        if (!firstName || !lastName || !email) {
+          setStatus("error", "First name, last name, and email are required.");
+          return;
+        }
 
-            try {
-                const { error } = await _supabase
-                    .from('users')
-                    .insert([{ email, name, is_new_recipient: true }])
-                    .select();
+        if (!isValidEmail(email)) {
+          setStatus("error", "Please provide a valid email address.");
+          return;
+        }
 
-                if (error) throw error;
+        if (
+          SUPABASE_URL.includes("SUPABASE_URL") ||
+          SUPABASE_ANON_KEY.includes("SUPABASE_KEY")
+        ) {
+          setStatus("error", "Add your Supabase URL and anon key first.");
+          return;
+        }
 
-                status.textContent = "You're in.";
-                status.classList.add('visible', 'success');
-                form.reset();
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Saving your spot...";
 
-            } catch (err) {
-                console.error(err);
-                let msg = 'Error. Try again.';
-                if (err.message.includes('duplicate key') || err.code === '23505') {
-                    msg = 'Already subscribed.';
-                }
-                status.textContent = msg;
-                status.classList.add('visible', 'error');
-            } finally {
-                btn.classList.remove('loading');
-                btn.disabled = false;
-            }
-        });
+        const endpoint = `${SUPABASE_URL.replace(/\/$/, "")}/rest/v1/${TABLE}`;
+
+        try {
+          const response = await fetch(endpoint, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+              apikey: SUPABASE_ANON_KEY,
+              Prefer: "return=minimal",
+            },
+            body: JSON.stringify({
+              name: `${firstName} ${lastName}`.trim(),
+              email,
+            }),
+          });
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error("Supabase insert failed:", response.status, errorText);
+            throw new Error("Unable to save your details right now.");
+          }
+
+          setStatus("success", "You are in. Your first issue arrives soon.");
+          form.reset();
+        } catch (error) {
+          setStatus(
+            "error",
+            error instanceof Error ? error.message : "Unable to join right now.",
+          );
+        } finally {
+          submitBtn.disabled = false;
+          submitBtn.textContent = "Get the next issue";
+        }
+      });
     </script>
-</body>
-
+  </body>
 </html>
