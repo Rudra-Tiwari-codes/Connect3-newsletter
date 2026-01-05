@@ -10,7 +10,11 @@ supabase: Client = create_client(url, key)
 
 def init_test():
     # 1. Insert a dummy user
-    user_data = {"email": "test_user@connect3.com", "name": "Test User"}
+    user_data = {
+        "email": "test_user_integration@connect3.com", 
+        "name": "Integration Test User",
+        "is_new_recipient": True
+    }
     user = supabase.table("users").insert(user_data).execute()
     print(f"Created User: {user.data[0]['id']}")
 

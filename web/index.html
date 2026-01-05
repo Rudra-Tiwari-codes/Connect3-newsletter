@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connect3</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+
+        :root {
+            --bg: #000000;
+            --fg: #ffffff;
+            --gray: #333333;
+            --light-gray: #666666;
+            --border: #222222;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--fg);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 400px;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.02em;
+        }
+
+        p.subtitle {
+            color: var(--light-gray);
+            font-size: 0.95rem;
+            margin-bottom: 2.5rem;
+            line-height: 1.5;
+            font-weight: 300;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        input {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--fg);
+            padding: 0.8rem 0;
+            font-size: 0.95rem;
+            border-width: 0 0 1px 0;
+            /* Underline only */
+            border-radius: 0;
+            transition: border-color 0.2s;
+            outline: none;
+        }
+
+        input::placeholder {
+            color: var(--gray);
+        }
+
+        input:focus {
+            border-color: var(--fg);
+        }
+
+        button {
+            width: 100%;
+            padding: 1rem;
+            background: var(--fg);
+            color: var(--bg);
+            border: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            border-radius: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Minimal Status */
+        .status {
+            margin-top: 1.5rem;
+            font-size: 0.85rem;
+            min-height: 1.2em;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .status.visible {
+            opacity: 1;
+        }
+
+        .status.success {
+            color: var(--light-gray);
+        }
+
+        /* Keep it subtle */
+        .status.error {
+            color: #ffffff;
+            text-decoration: underline;
+            text-decoration-color: #bd2b2b;
+        }
+
+        /* Minimal Loader */
+        .loader {
+            width: 14px;
+            height: 14px;
+            border: 1px solid var(--bg);
+            border-bottom-color: transparent;
+            border-radius: 50%;
+            animation: rotation 1s linear infinite;
+            display: none;
+        }
+
+        @keyframes rotation {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        button.loading .btn-text {
+            display: none;
+        }
+
+        button.loading .loader {
+            display: block;
+        }
+
+        .footer {
+            margin-top: 3rem;
+            color: var(--gray);
+            font-size: 0.75rem;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h1>Connect3</h1>
+        <p class="subtitle">Curated campus events.<br>Delivered weekly.</p>
+
+        <form id="subscribeForm">
+            <div class="input-group">
+                <input type="text" id="name" placeholder="Name" required autocomplete="off">
+                <input type="email" id="email" placeholder="Email" required autocomplete="off">
+            </div>
+
+            <button type="submit" id="submitBtn">
+                <span class="btn-text">Join Waitlist</span>
+                <span class="loader"></span>
+            </button>
+        </form>
+
+        <div id="status" class="status"></div>
+    </div>
+
+    <div class="footer">
+        &copy; 2026 Connect3
+    </div>
+
+    <script>
+        // ==========================================
+        // CONFIGURATION
+        // ==========================================
+        const SUPABASE_URL = 'https://proursxexbsidixdoesh.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InByb3Vyc3hleGJzaWRpeGRvZXNoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc1NzM3NzcsImV4cCI6MjA4MzE0OTc3N30.-0oZ29Ce_1n78uEl3Dld5K5QFzMXCPgGMOB-WKrY9qQ';
+        // ==========================================
+
+        const { createClient } = supabase;
+        const _supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        const form = document.getElementById('subscribeForm');
+        const btn = document.getElementById('submitBtn');
+        const status = document.getElementById('status');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const email = document.getElementById('email').value.trim();
+            const name = document.getElementById('name').value.trim();
+
+            if (!email || !name) return;
+
+            btn.classList.add('loading');
+            btn.disabled = true;
+            status.className = 'status';
+            status.textContent = '';
+
+            try {
+                const { error } = await _supabase
+                    .from('users')
+                    .insert([{ email, name, is_new_recipient: true }])
+                    .select();
+
+                if (error) throw error;
+
+                status.textContent = "You're in.";
+                status.classList.add('visible', 'success');
+                form.reset();
+
+            } catch (err) {
+                console.error(err);
+                let msg = 'Error. Try again.';
+                if (err.message.includes('duplicate key') || err.code === '23505') {
+                    msg = 'Already subscribed.';
+                }
+                status.textContent = msg;
+                status.classList.add('visible', 'error');
+            } finally {
+                btn.classList.remove('loading');
+                btn.disabled = false;
+            }
+        });
+    </script>
+</body>
+
+</html>
