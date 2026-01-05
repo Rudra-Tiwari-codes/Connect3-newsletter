@@ -6,6 +6,8 @@ from datetime import datetime, timezone
 from email.message import EmailMessage
 from typing import Any, Dict, List, Mapping
 
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+
 from .config import get_env
 from .email_templates import generate_personalized_email
 from .logger import get_logger
@@ -21,6 +23,12 @@ FEEDBACK_URL = "https://connect3-newsletter.vercel.app/feedback"
 SMTP_TIMEOUT_SEC = max(1, int(get_env("SMTP_TIMEOUT_SEC", "30") or "30"))
 
 
+@retry(
+  stop=stop_after_attempt(3),
+  wait=wait_exponential(multiplier=1, min=2, max=10),
+  retry=retry_if_exception_type((smtplib.SMTPException, OSError)),
+  reraise=True
+)
 def send_email(to_email: str, subject: str, html: str) -> None:
   if not GMAIL_USER or not GMAIL_APP_PASSWORD:
     raise RuntimeError("Gmail not configured. Set GMAIL_USER and GMAIL_APP_PASSWORD to send emails.")
