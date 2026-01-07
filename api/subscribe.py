@@ -119,13 +119,22 @@ class handler(BaseHTTPRequestHandler):
         record = {
             "name": f"{first_name} {last_name}".strip(),
             "email": email,
+            "is_new_recipient": True,
+            "is_unsubscribed": False,
         }
 
         try:
-            supabase.table(USERS_TABLE).insert(record).execute()
+            resp = supabase.table(USERS_TABLE).insert(record).execute()
+            # Check if response has data (successful insert)
+            if not resp.data:
+                # Log the full response for debugging
+                logger.error("Insert returned no data. Response: %s", resp)
+                _send_json(self, 500, {"error": "Unable to save your details right now."})
+                return
+            logger.info("Successfully inserted user: %s", email)
         except Exception as exc:
-            logger.error("Signup failed: %s", exc)
-            _send_json(self, 500, {"error": "Unable to save your details right now."})
+            logger.error("Signup failed with exception: %s", exc)
+            _send_json(self, 500, {"error": f"Unable to save your details: {str(exc)}"})
             return
 
         _send_json(self, 200, {"ok": True})

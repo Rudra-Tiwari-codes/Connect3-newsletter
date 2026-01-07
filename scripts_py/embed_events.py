@@ -47,12 +47,12 @@ def print_category_distribution() -> None:
     print(f"  {category.ljust(20)} {str(count).rjust(3)} {bar}")
 
 
-def main() -> None:
+def main(start_batch: int = 1) -> None:
   if not POSTS_PATH.exists():
     raise SystemExit(f"all_posts.json not found at {POSTS_PATH}")
 
   print("Starting event embedding process...\n")
-  posts = json.loads(POSTS_PATH.read_text())
+  posts = json.loads(POSTS_PATH.read_text(encoding='utf-8'))
   total = len(posts)
   print(f"Found {total} posts to process\n")
 
@@ -60,8 +60,13 @@ def main() -> None:
   errors = 0
   batch_size = 5
   total_batches = (total + batch_size - 1) // batch_size
+  
+  # Skip to start_batch (1-indexed)
+  start_index = (start_batch - 1) * batch_size
+  if start_batch > 1:
+    print(f"Skipping to batch {start_batch} (starting at post {start_index + 1})...\n")
 
-  for batch_start in range(0, total, batch_size):
+  for batch_start in range(start_index, total, batch_size):
     batch = posts[batch_start: batch_start + batch_size]
     batch_idx = (batch_start // batch_size) + 1
     print(f"Processing batch {batch_idx}/{total_batches}...")
@@ -85,4 +90,8 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-  main()
+  import argparse
+  parser = argparse.ArgumentParser()
+  parser.add_argument("--start-batch", type=int, default=1, help="Batch number to start from (1-indexed)")
+  args = parser.parse_args()
+  main(start_batch=args.start_batch)

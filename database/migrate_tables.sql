@@ -27,6 +27,33 @@ ADD COLUMN IF NOT EXISTS is_unsubscribed BOOLEAN DEFAULT FALSE,
 ADD COLUMN IF NOT EXISTS unsubscribed_at TIMESTAMPTZ;
 
 -- ============================================
+-- RLS POLICIES FOR USERS TABLE
+-- ============================================
+ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "Allow read users" ON public.users;
+DROP POLICY IF EXISTS "Service role insert users" ON public.users;
+DROP POLICY IF EXISTS "Service role update users" ON public.users;
+DROP POLICY IF EXISTS "Service role delete users" ON public.users;
+
+-- Allow anyone to read users (needed for API checks)
+CREATE POLICY "Allow read users" ON public.users
+    FOR SELECT USING (true);
+
+-- Allow insert for anyone (subscribe API runs as service role)
+CREATE POLICY "Service role insert users" ON public.users
+    FOR INSERT WITH CHECK (true);
+
+-- Allow update for anyone (service role for unsubscribe, preferences, etc.)
+CREATE POLICY "Service role update users" ON public.users
+    FOR UPDATE USING (true);
+
+-- Service role can delete users
+CREATE POLICY "Service role delete users" ON public.users
+    FOR DELETE USING (current_setting('request.jwt.claims', true)::json->>'role' = 'service_role');
+
+-- ============================================
 -- NEW TABLES TO CREATE
 -- ============================================
 
