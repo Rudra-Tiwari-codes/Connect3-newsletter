@@ -7,22 +7,21 @@ import json
 import logging
 import os
 import re
+import sys
 from http.server import BaseHTTPRequestHandler
+from pathlib import Path
 
-from supabase import create_client
+# Add parent directory to path for python_app imports in Vercel serverless
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from python_app.supabase_client import supabase
 
 logger = logging.getLogger(__name__)
 
-SUPABASE_URL = os.environ.get("SUPABASE_URL")
-SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_KEY") or os.environ.get("SUPABASE_KEY")
 USERS_TABLE = os.environ.get("SUPABASE_USERS_TABLE") or "users"
 ALLOWED_ORIGIN = os.environ.get("SUBSCRIBE_ALLOWED_ORIGIN")
 
 EMAIL_PATTERN = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
-
-supabase = None
-if SUPABASE_URL and SUPABASE_KEY:
-    supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 
 def _get_allowed_origin(handler: BaseHTTPRequestHandler) -> str:
@@ -87,6 +86,34 @@ class handler(BaseHTTPRequestHandler):
 
         if not EMAIL_PATTERN.match(email):
             _send_json(self, 400, {"error": "Please provide a valid email address."})
+            return
+
+        # Check for existing user with this email
+        try:
+            existing = (
+                supabase.table(USERS_TABLE)
+                .select("id, is_unsubscribed")
+                .eq("email", email)
+                .limit(1)
+                .execute()
+            )
+            if existing.data:
+                # User exists - check if they unsubscribed and want to resubscribe
+                if existing.data[0].get("is_unsubscribed"):
+                    # Reactivate the unsubscribed user
+                    supabase.table(USERS_TABLE).update({
+                        "is_unsubscribed": False,
+                        "unsubscribed_at": None,
+                        "name": f"{first_name} {last_name}".strip(),
+                    }).eq("id", existing.data[0]["id"]).execute()
+                    _send_json(self, 200, {"ok": True, "resubscribed": True})
+                    return
+                else:
+                    _send_json(self, 409, {"error": "This email is already subscribed."})
+                    return
+        except Exception as exc:
+            logger.error("Failed to check existing user: %s", exc)
+            _send_json(self, 500, {"error": "Unable to process your request right now."})
             return
 
         record = {

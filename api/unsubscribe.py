@@ -3,26 +3,25 @@ Vercel Serverless Function for email unsubscribe.
 Marks a user as unsubscribed and returns a confirmation page or redirects.
 """
 
-from http.server import BaseHTTPRequestHandler
-from urllib.parse import parse_qs, urlparse
-from datetime import datetime, timezone
 import hashlib
 import hmac
 import logging
 import os
+import sys
+from datetime import datetime, timezone
+from http.server import BaseHTTPRequestHandler
+from pathlib import Path
+from urllib.parse import parse_qs, urlparse
+
+# Add parent directory to path for python_app imports in Vercel serverless
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from python_app.supabase_client import supabase
 
 logger = logging.getLogger(__name__)
 
-from supabase import create_client
-
-SUPABASE_URL = os.environ.get("SUPABASE_URL")
-SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_KEY") or os.environ.get("SUPABASE_KEY")
 UNSUBSCRIBE_TOKEN_SECRET = os.environ.get("UNSUBSCRIBE_TOKEN_SECRET")
 UNSUBSCRIBE_REDIRECT_URL = os.environ.get("UNSUBSCRIBE_REDIRECT_URL") or os.environ.get("UNSUBSCRIBE_CONFIRM_URL")
-
-supabase = None
-if SUPABASE_URL and SUPABASE_KEY:
-    supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 
 def _expected_token(user_id: str, secret: str) -> str:

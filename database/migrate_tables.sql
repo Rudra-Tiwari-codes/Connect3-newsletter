@@ -114,8 +114,8 @@ CREATE INDEX IF NOT EXISTS idx_email_logs_status ON public.email_logs(status);
 
 ALTER TABLE public.email_logs ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Allow read email_logs" ON public.email_logs
-    FOR SELECT USING (true);
+CREATE POLICY "Service role read email_logs" ON public.email_logs
+    FOR SELECT USING (current_setting('request.jwt.claims', true)::json->>'role' = 'service_role');
 
 CREATE POLICY "Service role insert email_logs" ON public.email_logs
     FOR INSERT WITH CHECK (current_setting('request.jwt.claims', true)::json->>'role' = 'service_role');
