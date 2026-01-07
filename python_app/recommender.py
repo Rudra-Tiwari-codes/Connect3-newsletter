@@ -42,7 +42,8 @@ def _parse_date(value: Optional[str]) -> Optional[datetime]:
     return None
   try:
     return datetime.fromisoformat(value.replace("Z", "+00:00"))
-  except Exception:
+  except Exception as e:
+    logger.warning(f"Failed to parse date value '{value}': {e}")
     return None
 
 

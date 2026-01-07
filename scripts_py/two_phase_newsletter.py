@@ -21,7 +21,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from python_app.email_sender import send_email
 from python_app.email_templates import generate_personalized_email
+from python_app.logger import get_logger
 from python_app.supabase_client import supabase, ensure_ok
+
+logger = get_logger(__name__)
 
 
 class CategoryCache:
@@ -60,9 +63,9 @@ class CategoryCache:
                         self._cache[event_id] = category or "general"
             
             self._loaded = True
-            print(f"  CategoryCache: Loaded {len(self._cache)} categories in 1 query")
+            logger.info(f"CategoryCache: Loaded {len(self._cache)} categories in 1 query")
         except Exception as e:
-            print(f"  Warning: Failed to batch load categories: {e}")
+            logger.warning(f"Failed to batch load categories: {e}")
             self._loaded = True  # Prevent retry loops
     
     def get(self, event_id: str) -> str:
@@ -109,16 +112,16 @@ def mark_user_onboarded(user: Dict[str, Any]) -> None:
         resp = supabase.table("users").update(payload).eq("id", user["id"]).execute()
         ensure_ok(resp, action="update user onboarding status")
     except Exception as e:
-        print(f"  Warning: Failed to update onboarding status for user {user.get('id')}: {e}")
+        logger.warning(f"Failed to update onboarding status for user {user.get('id')}: {e}")
 
 
 def clear_user_interactions(user_id: str):
     """Clear existing interactions for a user (fresh start)"""
     try:
         supabase.table("interactions").delete().eq("user_id", user_id).execute()
-        print(f"  Cleared previous interactions for user {user_id}")
+        logger.info(f"Cleared previous interactions for user {user_id}")
     except Exception as e:
-        print(f"  Warning: Could not clear interactions: {e}")
+        logger.warning(f"Could not clear interactions: {e}")
 
 
 def send_phase1_random_newsletter(user: Dict, posts: List[Dict]) -> List[str]:
@@ -270,16 +273,16 @@ def store_user_top_categories(user_id: str, categories: List[str]) -> None:
         supabase.table("users").update({
             "top_categories": categories
         }).eq("id", user_id).execute()
-        print(f"  Stored top categories: {categories}")
+        logger.info(f"Stored top categories: {categories}")
     except Exception as e:
-        print(f"  Warning: Could not store top categories: {e}")
+        logger.warning(f"Could not store top categories: {e}")
 
 
 def send_phase2_preference_newsletter(user: Dict, posts: List[Dict], phase1_ids: List[str]):
     """Phase 2: Send preference-based newsletter (3-3-1-2 distribution)"""
     user_id = user["id"]
     categories = get_user_preferred_categories(user_id)
-    print(f"  User's preferred categories: {categories}")
+    logger.info(f"User's preferred categories: {categories}")
     
     # Store user's top categories for future reference
     store_user_top_categories(user_id, categories)
@@ -290,23 +293,23 @@ def send_phase2_preference_newsletter(user: Dict, posts: List[Dict], phase1_ids:
     # 3 from category 1
     cat1_events = get_events_by_category(posts, categories[0], exclude_ids, 3)
     selected_events.extend(cat1_events)
-    print(f"  - {len(cat1_events)} from {categories[0]}")
+    logger.debug(f"{len(cat1_events)} from {categories[0]}")
     
     # 3 from category 2
     cat2_events = get_events_by_category(posts, categories[1], exclude_ids, 3)
     selected_events.extend(cat2_events)
-    print(f"  - {len(cat2_events)} from {categories[1]}")
+    logger.debug(f"{len(cat2_events)} from {categories[1]}")
     
     # 1 from category 3
     cat3_events = get_events_by_category(posts, categories[2], exclude_ids, 1)
     selected_events.extend(cat3_events)
-    print(f"  - {len(cat3_events)} from {categories[2]}")
+    logger.debug(f"{len(cat3_events)} from {categories[2]}")
     
     # 2 exploration events from NON-preferred categories
     exploration_events = get_exploration_events(posts, exclude_ids, categories, 2)
     selected_events.extend(exploration_events)
     exploration_cats = [e.get('category', 'unknown') for e in exploration_events]
-    print(f"  - {len(exploration_events)} exploration from: {exploration_cats}")
+    logger.debug(f"{len(exploration_events)} exploration from: {exploration_cats}")
     
     # Send email
     html = generate_personalized_email(user, selected_events, "https://connect3-newsletter.vercel.app/feedback")
@@ -318,7 +321,7 @@ def send_phase2_preference_newsletter(user: Dict, posts: List[Dict], phase1_ids:
 def run_two_phase_newsletter(delay_minutes: int = 5):
     """Run the complete two-phase newsletter flow"""
     posts = load_posts()
-    print(f"Loaded {len(posts)} events from all_posts.json")
+    logger.info(f"Loaded {len(posts)} events from all_posts.json")
     
     # OPTIMIZATION: Batch-load all categories in a single DB query
     # This replaces N individual queries with 1 query
@@ -338,7 +341,7 @@ def run_two_phase_newsletter(delay_minutes: int = 5):
         if not user.get("email"):
             continue
         if user.get("is_unsubscribed"):
-            print(f"Skipping unsubscribed user: {user.get('email')}")
+            logger.info(f"Skipping unsubscribed user: {user.get('email')}")
             continue
         if is_new_recipient(user):
             new_users.append(user)
@@ -346,23 +349,23 @@ def run_two_phase_newsletter(delay_minutes: int = 5):
             returning_users.append(user)
 
     if returning_users:
-        print(f"\n{'='*50}")
-        print("PREFERENCE-BASED NEWSLETTER (RETURNING USERS)")
-        print(f"{'='*50}")
+        logger.info("="*50)
+        logger.info("PREFERENCE-BASED NEWSLETTER (RETURNING USERS)")
+        logger.info("="*50)
 
         for user in returning_users:
-            print(f"\nProcessing: {user['email']}")
+            logger.info(f"Processing: {user['email']}")
             send_phase2_preference_newsletter(user, posts, [])
-            print("  Sent: Personalized events")
+            logger.info("Sent: Personalized events")
 
     phase1_sent = {}
     if new_users:
-        print(f"\n{'='*50}")
-        print("PHASE 1: INITIAL DISCOVERY (NEW USERS)")
-        print(f"{'='*50}")
+        logger.info("="*50)
+        logger.info("PHASE 1: INITIAL DISCOVERY (NEW USERS)")
+        logger.info("="*50)
 
         for user in new_users:
-            print(f"\nProcessing: {user['email']}")
+            logger.info(f"Processing: {user['email']}")
 
             # Clear previous interactions for fresh start
             clear_user_interactions(user["id"])
@@ -371,12 +374,12 @@ def run_two_phase_newsletter(delay_minutes: int = 5):
             sent_ids = send_phase1_random_newsletter(user, posts)
             phase1_sent[user["id"]] = sent_ids
             mark_user_onboarded(user)
-            print("  Phase 1 sent: 9 random events")
+            logger.info("Phase 1 sent: 9 random events")
 
-        print(f"\n{'='*50}")
-        print(f"WAITING UP TO {delay_minutes} MINUTES...")
-        print("Scaning for interactions every 10 seconds to send Phase 2 immediately.")
-        print(f"{'='*50}")
+        logger.info("="*50)
+        logger.info(f"WAITING UP TO {delay_minutes} MINUTES...")
+        logger.info("Scanning for interactions every 10 seconds to send Phase 2 immediately.")
+        logger.info("="*50)
 
         # Track who has been sent Phase 2 to avoid double sending
         phase2_sent_users = set()
@@ -390,11 +393,11 @@ def run_two_phase_newsletter(delay_minutes: int = 5):
             # Check for interactions for ALL pending users
             pending_users = [u for u in new_users if u["id"] not in phase2_sent_users]
             if not pending_users:
-                print("  All users have interacted! Finishing early.")
+                logger.info("All users have interacted! Finishing early.")
                 break
                 
             elapsed = int(time.time() - start_time)
-            print(f"  [{elapsed}s / {max_duration}s] Checking interactions for {len(pending_users)} users...")
+            logger.debug(f"[{elapsed}s / {max_duration}s] Checking interactions for {len(pending_users)} users...")
             
             for user in pending_users:
                 # Check if user has ANY interactions since Phase 1 started
@@ -403,29 +406,29 @@ def run_two_phase_newsletter(delay_minutes: int = 5):
                 
                 # If they have interacted (count > 0), trigger Phase 2 NOW
                 if resp.count and resp.count > 0:
-                    print(f"\n  >>> INTERACTION DETECTED for {user['email']}!")
+                    logger.info(f">>> INTERACTION DETECTED for {user['email']}!")
                     phase1_ids = phase1_sent.get(user["id"], [])
                     send_phase2_preference_newsletter(user, posts, phase1_ids)
-                    print("  Phase 2 sent: Personalized events (Instant)")
+                    logger.info("Phase 2 sent: Personalized events (Instant)")
                     phase2_sent_users.add(user["id"])
             
             time.sleep(poll_interval)
 
-        print(f"\n{'='*50}")
-        print("TIMEOUT REACHED - SENDING DEFAULTS TO REMAINING USERS")
-        print(f"{'='*50}")
+        logger.info("="*50)
+        logger.info("TIMEOUT REACHED - SENDING DEFAULTS TO REMAINING USERS")
+        logger.info("="*50)
 
         # Process anyone left who hasn't interacted
         remaining_users = [u for u in new_users if u["id"] not in phase2_sent_users]
         for user in remaining_users:
-            print(f"\nProcessing (Default): {user['email']}")
+            logger.info(f"Processing (Default): {user['email']}")
             phase1_ids = phase1_sent.get(user["id"], [])
             send_phase2_preference_newsletter(user, posts, phase1_ids)
-            print("  Phase 2 sent: Default Recommendation events")
+            logger.info("Phase 2 sent: Default Recommendation events")
     
-    print(f"\n{'='*50}")
-    print("TWO-PHASE NEWSLETTER COMPLETE!")
-    print(f"{'='*50}")
+    logger.info("="*50)
+    logger.info("TWO-PHASE NEWSLETTER COMPLETE!")
+    logger.info("="*50)
 
 
 if __name__ == "__main__":
