@@ -12,7 +12,6 @@ import random
 import sys
 import time
 from datetime import datetime, timezone
-from collections import Counter
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 
@@ -21,7 +20,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from python_app.email_sender import send_email
 from python_app.email_templates import generate_personalized_email
-from python_app.logger import get_logger
+from python_app.logger import get_logger, setup_logging
 from python_app.supabase_client import supabase, ensure_ok
 
 logger = get_logger(__name__)
@@ -157,36 +156,47 @@ def send_phase1_random_newsletter(user: Dict, posts: List[Dict]) -> List[str]:
 
 
 def get_user_preferred_categories(user_id: str) -> List[str]:
-    """Get user's top 3 liked categories based on their interactions"""
-    resp = supabase.table("interactions").select("event_id, interaction_type").eq("user_id", user_id).execute()
+    """
+    Get user's top 3 preferred categories based on user_preferences scores.
     
-    interactions = resp.data or []
-    category_scores: Counter = Counter()
+    Uses the stored preference scores (updated by clicks via feedback.py)
+    instead of counting raw interactions. This provides proper personalization.
+    """
+    # Category columns in user_preferences table
+    CATEGORY_COLUMNS = [
+        "tech_innovation", "career_networking", "academic_workshops",
+        "social_cultural", "entrepreneurship", "sports_fitness",
+        "arts_music", "volunteering_community", "food_dining",
+        "travel_adventure", "health_wellness", "environment_sustainability",
+        "gaming_esports"
+    ]
     
-    for interaction in interactions:
-        event_id = interaction.get("event_id")
-        action = interaction.get("interaction_type", "like")
+    # Fetch user's preference scores from user_preferences table
+    resp = supabase.table("user_preferences").select("*").eq("user_id", user_id).limit(1).execute()
+    
+    if resp.data and len(resp.data) > 0:
+        prefs = resp.data[0]
+        # Build list of (category, score) tuples
+        category_scores = []
+        for cat in CATEGORY_COLUMNS:
+            score = prefs.get(cat, 0.077)  # Default uniform baseline
+            category_scores.append((cat, score))
         
-        if event_id:
-            category = get_category_for_event(event_id)
-            if action == "like":
-                category_scores[category] += 1
-            elif action == "dislike":
-                category_scores[category] -= 0.5
-    
-    top_cats = [cat for cat, score in category_scores.most_common(3) if score > 0]
-    
-    # Fill with defaults if needed
-    defaults = ["tech_innovation", "career_networking", "academic_workshops"]
-    while len(top_cats) < 3:
-        for d in defaults:
-            if d not in top_cats:
-                top_cats.append(d)
-                break
+        # Sort by score descending and get top 3
+        category_scores.sort(key=lambda x: x[1], reverse=True)
+        top_cats = [cat for cat, score in category_scores[:3] if score > 0]
+        
+        # Log for debugging
+        logger.info(f"User {user_id[:8]}... preference scores: {category_scores[:5]}")
+        
         if len(top_cats) >= 3:
-            break
+            return top_cats[:3]
+    else:
+        logger.warning(f"No user_preferences found for user {user_id}, using defaults")
     
-    return top_cats[:3]
+    # Fallback to defaults if no preferences or not enough data
+    defaults = ["tech_innovation", "career_networking", "academic_workshops"]
+    return defaults[:3]
 
 
 def get_events_by_category(posts: List[Dict], category: str, exclude_ids: set, limit: int) -> List[Dict]:
@@ -432,5 +442,6 @@ def run_two_phase_newsletter(delay_minutes: int = 5):
 
 
 if __name__ == "__main__":
+    setup_logging()
     # Run the two-phase flow with 5-minute delay
     run_two_phase_newsletter(delay_minutes=5)
