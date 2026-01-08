@@ -22,8 +22,30 @@ from python_app.email_sender import send_email
 from python_app.email_templates import generate_personalized_email
 from python_app.logger import get_logger, setup_logging
 from python_app.supabase_client import supabase, ensure_ok
+from python_app.config import get_env
 
 logger = get_logger(__name__)
+
+# Base URL for feedback links (configurable for local dev)
+FEEDBACK_BASE_URL = get_env("FEEDBACK_BASE_URL", "https://connect3-newsletter.vercel.app/feedback")
+
+
+def log_email_sent(user_id: str, events_sent: List[str], status: str = "sent", error_message: str = None) -> None:
+    """Log email delivery to email_logs table."""
+    try:
+        log_data = {
+            "user_id": user_id,
+            "status": status,
+            "events_sent": events_sent,
+            "sent_at": datetime.now(timezone.utc).isoformat(),
+        }
+        if error_message:
+            log_data["error_message"] = error_message
+        
+        supabase.table("email_logs").insert(log_data).execute()
+        logger.debug(f"Logged email: user={user_id[:8]}..., status={status}")
+    except Exception as e:
+        logger.warning(f"Failed to log email: {e}")
 
 
 class CategoryCache:
@@ -148,10 +170,16 @@ def send_phase1_random_newsletter(user: Dict, posts: List[Dict]) -> List[str]:
         sent_ids.append(event_id)
     
     # Generate and send email
-    html = generate_personalized_email(user, events, "https://connect3-newsletter.vercel.app/feedback")
+    html = generate_personalized_email(user, events, FEEDBACK_BASE_URL)
     subject = f"Phase 1: Discover 9 Events - Tell Us What You Like!"
     
-    send_email(user["email"], subject, html)
+    try:
+        send_email(user["email"], subject, html)
+        log_email_sent(user["id"], sent_ids, status="sent")
+    except Exception as e:
+        log_email_sent(user["id"], sent_ids, status="failed", error_message=str(e))
+        raise
+    
     return sent_ids
 
 
@@ -322,10 +350,16 @@ def send_phase2_preference_newsletter(user: Dict, posts: List[Dict], phase1_ids:
     logger.debug(f"{len(exploration_events)} exploration from: {exploration_cats}")
     
     # Send email
-    html = generate_personalized_email(user, selected_events, "https://connect3-newsletter.vercel.app/feedback")
+    html = generate_personalized_email(user, selected_events, FEEDBACK_BASE_URL)
     subject = f"Phase 2: {len(selected_events)} Events Curated Just For You!"
     
-    send_email(user["email"], subject, html)
+    sent_ids = [e.get("event_id") or e.get("id") for e in selected_events]
+    try:
+        send_email(user["email"], subject, html)
+        log_email_sent(user["id"], sent_ids, status="sent")
+    except Exception as e:
+        log_email_sent(user["id"], sent_ids, status="failed", error_message=str(e))
+        raise
 
 
 def run_two_phase_newsletter(delay_minutes: int = 5):
@@ -377,8 +411,8 @@ def run_two_phase_newsletter(delay_minutes: int = 5):
         for user in new_users:
             logger.info(f"Processing: {user['email']}")
 
-            # Clear previous interactions for fresh start
-            clear_user_interactions(user["id"])
+            # NOTE: We no longer clear interactions - they are valuable click data!
+            # Old code deleted user clicks which broke interaction detection.
 
             # Send Phase 1
             sent_ids = send_phase1_random_newsletter(user, posts)
@@ -410,13 +444,33 @@ def run_two_phase_newsletter(delay_minutes: int = 5):
             logger.debug(f"[{elapsed}s / {max_duration}s] Checking interactions for {len(pending_users)} users...")
             
             for user in pending_users:
-                # Check if user has ANY interactions since Phase 1 started
-                # We can optimize this by checking timestamps, but counting is safe enough for this scale
-                resp = supabase.table("interactions").select("count", count="exact").eq("user_id", user["id"]).execute()
+                # Check if user has ANY interactions OR if their preferences have been updated
+                # This handles both direct interactions and preference updates from clicks
+                interaction_count = 0
+                prefs_changed = False
                 
-                # If they have interacted (count > 0), trigger Phase 2 NOW
-                if resp.count and resp.count > 0:
-                    logger.info(f">>> INTERACTION DETECTED for {user['email']}!")
+                try:
+                    # Check interactions table
+                    resp = supabase.table("interactions").select("count", count="exact").eq("user_id", user["id"]).execute()
+                    interaction_count = resp.count or 0
+                    
+                    # Also check if user_preferences has non-default scores (indicates clicks happened)
+                    prefs_resp = supabase.table("user_preferences").select("*").eq("user_id", user["id"]).limit(1).execute()
+                    if prefs_resp.data:
+                        p = prefs_resp.data[0]
+                        # Check if any score differs from baseline 0.077 by more than 0.01
+                        for cat in ['tech_innovation', 'career_networking', 'academic_workshops', 'social_cultural', 
+                                    'entrepreneurship', 'sports_fitness', 'arts_music', 'volunteering_community',
+                                    'food_dining', 'travel_adventure', 'health_wellness', 'environment_sustainability', 'gaming_esports']:
+                            if abs(p.get(cat, 0.077) - 0.077) > 0.01:
+                                prefs_changed = True
+                                break
+                except Exception as e:
+                    logger.warning(f"Error checking interactions: {e}")
+                
+                # If they have interacted OR preferences changed, trigger Phase 2 NOW
+                if interaction_count > 0 or prefs_changed:
+                    logger.info(f">>> INTERACTION DETECTED for {user['email']}! (interactions={interaction_count}, prefs_changed={prefs_changed})")
                     phase1_ids = phase1_sent.get(user["id"], [])
                     send_phase2_preference_newsletter(user, posts, phase1_ids)
                     logger.info("Phase 2 sent: Personalized events (Instant)")
@@ -443,5 +497,11 @@ def run_two_phase_newsletter(delay_minutes: int = 5):
 
 if __name__ == "__main__":
     setup_logging()
+    
+    # Silence verbose HTTP client logs (httpx, httpcore, hpack)
+    import logging as _logging
+    for noisy_logger in ['httpx', 'httpcore', 'hpack', 'h2', 'urllib3']:
+        _logging.getLogger(noisy_logger).setLevel(_logging.WARNING)
+    
     # Run the two-phase flow with 5-minute delay
     run_two_phase_newsletter(delay_minutes=5)
