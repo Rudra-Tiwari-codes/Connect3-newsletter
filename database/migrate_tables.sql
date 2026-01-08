@@ -4,6 +4,17 @@
 -- ============================================
 
 -- ============================================
+-- FIX INTERACTIONS TABLE CONSTRAINT
+-- The original constraint may not include 'like'/'dislike' values
+-- ============================================
+ALTER TABLE public.interactions 
+DROP CONSTRAINT IF EXISTS interactions_interaction_type_check;
+
+ALTER TABLE public.interactions 
+ADD CONSTRAINT interactions_interaction_type_check 
+CHECK (interaction_type IN ('like', 'dislike', 'click', 'view'));
+
+-- ============================================
 -- EXISTING TABLES (already in your database)
 -- ============================================
 -- 1. events (id: int8, title, description, date, category, image_url, created_at)
