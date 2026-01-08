@@ -54,6 +54,28 @@ CREATE POLICY "Service role delete users" ON public.users
     FOR DELETE USING (current_setting('request.jwt.claims', true)::json->>'role' = 'service_role');
 
 -- ============================================
+-- RLS POLICIES FOR INTERACTIONS TABLE
+-- ============================================
+ALTER TABLE public.interactions ENABLE ROW LEVEL SECURITY;
+
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "Service role insert interactions" ON public.interactions;
+DROP POLICY IF EXISTS "Service role read interactions" ON public.interactions;
+DROP POLICY IF EXISTS "Service role update interactions" ON public.interactions;
+
+-- Allow service role to insert interactions (used by feedback API)
+CREATE POLICY "Service role insert interactions" ON public.interactions
+    FOR INSERT WITH CHECK (true);
+
+-- Allow service role to read interactions (used for calculating preferences)
+CREATE POLICY "Service role read interactions" ON public.interactions
+    FOR SELECT USING (true);
+
+-- Allow service role to update interactions
+CREATE POLICY "Service role update interactions" ON public.interactions
+    FOR UPDATE USING (true);
+
+-- ============================================
 -- NEW TABLES TO CREATE
 -- ============================================
 
