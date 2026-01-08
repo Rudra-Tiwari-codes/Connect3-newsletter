@@ -12,19 +12,14 @@ import json
 import logging
 import os
 import re
-import sys
 import time
 from collections import defaultdict
 from datetime import datetime, timezone, timedelta
 from http.server import BaseHTTPRequestHandler
-from pathlib import Path
 from threading import Lock
 from urllib.parse import parse_qs, urlparse
 
-# Add parent directory to path for python_app imports in Vercel serverless
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-
-from python_app.supabase_client import supabase, ensure_ok
+from supabase import create_client
 
 # Configure logging
 logging.basicConfig(
@@ -36,6 +31,9 @@ logger = logging.getLogger(__name__)
 # =============================================================================
 # Configuration
 # =============================================================================
+
+SUPABASE_URL = os.environ.get("SUPABASE_URL")
+SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_KEY") or os.environ.get("SUPABASE_KEY")
 
 # Time decay: clicks older than this many days don't affect preferences
 PREFERENCE_DECAY_DAYS = 15
@@ -62,7 +60,12 @@ VALID_CATEGORIES = {
     'gaming_esports', 'general'
 }
 
-# Supabase client is now imported from python_app.supabase_client
+# Initialize Supabase client
+supabase = None
+if SUPABASE_URL and SUPABASE_KEY:
+    supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+else:
+    logger.error("Supabase credentials not configured")
 
 # =============================================================================
 # Rate Limiting (In-Memory for Serverless)
@@ -206,10 +209,12 @@ def store_interaction(user_id: str, event_id: str, action: str) -> bool:
     Returns True if successful, False otherwise.
     """
     if not supabase:
-        logger.error("Supabase client not initialized")
+        logger.error("Supabase client not initialized - check SUPABASE_URL and SUPABASE_SERVICE_KEY env vars")
         return False
     
     try:
+        logger.info(f"Attempting to store interaction: user={user_id[:8]}..., event={event_id}, action={action}")
+        
         # Check for existing interaction (prevent duplicates)
         existing = (
             supabase.table('interactions')
@@ -223,22 +228,22 @@ def store_interaction(user_id: str, event_id: str, action: str) -> bool:
         if existing.data:
             # Update existing interaction if action changed
             if existing.data[0].get('interaction_type') != action:
-                supabase.table('interactions').update({
+                result = supabase.table('interactions').update({
                     'interaction_type': action
                 }).eq('id', existing.data[0]['id']).execute()
-                logger.info(f"Updated interaction: user={user_id[:8]}..., event={event_id}, action={action}")
+                logger.info(f"Updated interaction: user={user_id[:8]}..., event={event_id}, action={action}, result={result}")
         else:
             # Insert new interaction
-            supabase.table('interactions').insert({
+            result = supabase.table('interactions').insert({
                 'user_id': user_id,
                 'event_id': event_id,
                 'interaction_type': action
             }).execute()
-            logger.info(f"Created interaction: user={user_id[:8]}..., event={event_id}, action={action}")
+            logger.info(f"Created interaction: user={user_id[:8]}..., event={event_id}, action={action}, result_data={result.data}")
         
         return True
     except Exception as e:
-        logger.error(f"Error storing interaction: {e}")
+        logger.error(f"Error storing interaction: {type(e).__name__}: {e}")
         return False
 
 
