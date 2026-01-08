@@ -131,6 +131,32 @@ class handler(BaseHTTPRequestHandler):
                 logger.error("Insert returned no data. Response: %s", resp)
                 _send_json(self, 500, {"error": "Unable to save your details right now."})
                 return
+            
+            # Get the new user's ID and create linked user_preferences record
+            new_user_id = resp.data[0].get("id")
+            if new_user_id:
+                try:
+                    # Create user_preferences with uniform baseline scores (1/13 ≈ 0.077)
+                    supabase.table("user_preferences").insert({
+                        "user_id": new_user_id,
+                        "tech_innovation": 0.077,
+                        "career_networking": 0.077,
+                        "academic_workshops": 0.077,
+                        "social_cultural": 0.077,
+                        "entrepreneurship": 0.077,
+                        "sports_fitness": 0.077,
+                        "arts_music": 0.077,
+                        "volunteering_community": 0.077,
+                        "food_dining": 0.077,
+                        "travel_adventure": 0.077,
+                        "health_wellness": 0.077,
+                        "environment_sustainability": 0.077,
+                        "gaming_esports": 0.077,
+                    }).execute()
+                    logger.info("Created user_preferences for user: %s", new_user_id)
+                except Exception as pref_exc:
+                    logger.warning("Could not create user_preferences: %s", pref_exc)
+            
             logger.info("Successfully inserted user: %s", email)
         except Exception as exc:
             logger.error("Signup failed with exception: %s", exc)
