@@ -163,17 +163,21 @@ CREATE INDEX IF NOT EXISTS idx_email_logs_status ON public.email_logs(status);
 
 ALTER TABLE public.email_logs ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Service role read email_logs" ON public.email_logs
-    FOR SELECT USING (current_setting('request.jwt.claims', true)::json->>'role' = 'service_role');
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "Service role read email_logs" ON public.email_logs;
+DROP POLICY IF EXISTS "Service role insert email_logs" ON public.email_logs;
+DROP POLICY IF EXISTS "Service role update email_logs" ON public.email_logs;
+DROP POLICY IF EXISTS "Service role delete email_logs" ON public.email_logs;
+DROP POLICY IF EXISTS "Allow insert email_logs" ON public.email_logs;
+DROP POLICY IF EXISTS "Allow read email_logs" ON public.email_logs;
 
-CREATE POLICY "Service role insert email_logs" ON public.email_logs
-    FOR INSERT WITH CHECK (current_setting('request.jwt.claims', true)::json->>'role' = 'service_role');
+-- Allow anyone to insert email logs (needed for newsletter script)
+CREATE POLICY "Allow insert email_logs" ON public.email_logs
+    FOR INSERT WITH CHECK (true);
 
-CREATE POLICY "Service role update email_logs" ON public.email_logs
-    FOR UPDATE USING (current_setting('request.jwt.claims', true)::json->>'role' = 'service_role');
-
-CREATE POLICY "Service role delete email_logs" ON public.email_logs
-    FOR DELETE USING (current_setting('request.jwt.claims', true)::json->>'role' = 'service_role');
+-- Allow anyone to read email logs
+CREATE POLICY "Allow read email_logs" ON public.email_logs
+    FOR SELECT USING (true);
 
 -- ============================================
 -- VERIFY ALL TABLES EXIST
