@@ -259,6 +259,15 @@ def update_preferences(user_id: str, category: str, action: str) -> None:
         UNIFORM_BASELINE = 1.0 / 13.0
         SCORE_INCREMENT = 0.05
         
+        # All category columns in user_preferences table
+        ALL_CATEGORIES = [
+            'tech_innovation', 'career_networking', 'academic_workshops',
+            'social_cultural', 'entrepreneurship', 'sports_fitness',
+            'arts_music', 'volunteering_community', 'food_dining',
+            'travel_adventure', 'health_wellness', 'environment_sustainability',
+            'gaming_esports'
+        ]
+        
         prefs = (
             supabase.table('user_preferences')
             .select('*')
@@ -279,16 +288,20 @@ def update_preferences(user_id: str, category: str, action: str) -> None:
             }).eq('user_id', user_id).execute()
             logger.debug(f"Updated preference: {category} = {new_score:.3f}")
         else:
-            # New user: start with uniform baseline, adjust for action
-            initial_score = (
-                UNIFORM_BASELINE + 0.1 if action == 'like' 
-                else max(0.0, UNIFORM_BASELINE - SCORE_INCREMENT)
-            )
-            supabase.table('user_preferences').insert({
-                'user_id': user_id,
-                category: initial_score
-            }).execute()
-            logger.info(f"Created preferences for user {user_id[:8]}...")
+            # New user: create COMPLETE preference record with all 13 categories
+            # Start with uniform baseline for all categories
+            pref_record = {'user_id': user_id}
+            for cat in ALL_CATEGORIES:
+                pref_record[cat] = UNIFORM_BASELINE
+            
+            # Adjust the interacted category based on action
+            if action == 'like':
+                pref_record[category] = UNIFORM_BASELINE + 0.1
+            else:
+                pref_record[category] = max(0.0, UNIFORM_BASELINE - SCORE_INCREMENT)
+            
+            supabase.table('user_preferences').insert(pref_record).execute()
+            logger.info(f"Created complete preferences for user {user_id[:8]}... with {len(ALL_CATEGORIES)} categories")
     except Exception as e:
         logger.error(f"Error updating preferences: {e}")
 
