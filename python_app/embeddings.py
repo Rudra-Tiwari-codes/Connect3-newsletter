@@ -5,28 +5,15 @@ import re
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
+from .categories import CATEGORY_DESCRIPTIONS, CONNECT3_CATEGORIES
 from .logger import get_logger
 from .openai_client import client, with_retry
 from .supabase_client import ensure_ok, supabase
 
 logger = get_logger(__name__)
 
-# Event categories for Connect3 - standardized across all modules
-CONNECT3_CATEGORIES = [
-  "academic_workshops",
-  "career_networking",
-  "social_cultural",
-  "sports_fitness",
-  "arts_music",
-  "tech_innovation",
-  "volunteering_community",
-  "food_dining",
-  "travel_adventure",
-  "health_wellness",
-  "entrepreneurship",
-  "environment_sustainability",
-  "gaming_esports",
-]
+# Event categories imported from centralized module
+# See categories.py for the single source of truth
 
 EMBEDDING_DIM = 1536
 
@@ -198,21 +185,8 @@ def embed_user(user_id: str, decay_half_life_days: float = 30.0) -> List[float]:
   ensure_ok(prefs_resp, action="select user_preferences")
   prefs = prefs_resp.data[0] if prefs_resp.data else None
   if prefs:
-    pref_mapping = {
-      "tech_innovation": "technology, AI, machine learning, coding",
-      "career_networking": "career development, networking, industry connections",
-      "academic_workshops": "academic workshops, revision sessions, study groups",
-      "social_cultural": "social events, parties, cultural activities",
-      "entrepreneurship": "startups, entrepreneurship, business",
-      "sports_fitness": "sports, fitness, physical activities",
-      "arts_music": "arts, music, creative performances, exhibitions",
-      "volunteering_community": "volunteering, community service, charity events",
-      "food_dining": "food, dining, cooking, culinary experiences",
-      "travel_adventure": "travel, adventure, outdoor activities, exploration",
-      "health_wellness": "health, wellness, mental health, self-care",
-      "environment_sustainability": "environment, sustainability, green initiatives, climate",
-      "gaming_esports": "gaming, esports, video games, tournaments",
-    }
+    # Use centralized category descriptions
+    pref_mapping = CATEGORY_DESCRIPTIONS
     interests: List[str] = []
     for key, description in pref_mapping.items():
       score = prefs.get(key)

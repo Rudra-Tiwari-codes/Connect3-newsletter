@@ -51,13 +51,15 @@ EVENT_ID_PATTERN = re.compile(r'^[a-zA-Z0-9_-]{1,64}$')
 CATEGORY_PATTERN = re.compile(r'^[a-z_]{1,50}$')
 ACTION_WHITELIST = {'like', 'dislike', 'click'}
 
-# Valid categories (must match CONNECT3_CATEGORIES in embeddings.py)
+# Valid categories - matches CONNECT3_CATEGORIES from embeddings.py
+# Note: 'general' is a fallback for validation, not a real event category
 VALID_CATEGORIES = {
     'academic_workshops', 'career_networking', 'social_cultural',
     'sports_fitness', 'arts_music', 'tech_innovation',
     'volunteering_community', 'food_dining', 'travel_adventure',
     'health_wellness', 'entrepreneurship', 'environment_sustainability',
-    'gaming_esports', 'general'
+    'gaming_esports',
+    'general',  # Fallback category for unclassified events
 }
 
 # Initialize Supabase client
