@@ -22,18 +22,6 @@ class VectorIndex:
     self._norms: Optional[np.ndarray] = None    # Pre-computed norms for each vector
     self._metadata: List[Optional[Dict[str, Any]]] = []
     self._id_to_idx: Dict[str, int] = {}  # Fast lookup for remove operations
-    self._dirty = False  # Track if we need to rebuild the matrix
-
-  def _rebuild_matrix(self) -> None:
-    """Rebuild the NumPy matrix from stored vectors."""
-    if not self._ids:
-      self._vectors = None
-      self._norms = None
-      return
-    # Already up to date
-    if not self._dirty and self._vectors is not None:
-      return
-    self._dirty = False
 
   def add(self, vector_id: str, vector: Sequence[float], metadata: Optional[Dict[str, Any]] = None) -> None:
     """Add a vector to the index."""
