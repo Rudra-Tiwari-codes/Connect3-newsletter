@@ -28,6 +28,8 @@ logger = get_logger(__name__)
 
 # Base URL for feedback links (configurable for local dev)
 FEEDBACK_BASE_URL = get_env("FEEDBACK_BASE_URL", "https://connect3-newsletter.vercel.app/feedback")
+DEFAULT_PHASE2_TOTAL = 9
+WAIT_FOR_INTERACTIONS_ENV = get_env("NEWSLETTER_WAIT_FOR_INTERACTIONS", "false").lower() == "true"
 
 
 def log_email_sent(user_id: str, events_sent: List[str], status: str = "sent", error_message: str = None) -> None:
@@ -145,6 +147,28 @@ def clear_user_interactions(user_id: str):
         logger.warning(f"Could not clear interactions: {e}")
 
 
+def build_event_from_post(
+    post: Dict[str, Any],
+    category: str,
+    *,
+    is_exploration: bool = False,
+) -> Dict[str, Any]:
+    event_id = post.get("id")
+    event = {
+        "event_id": event_id,
+        "id": event_id,
+        "title": post.get("caption", "")[:80].split("\n")[0] or "Event",
+        "description": post.get("caption", "")[:200],
+        "category": category,
+        "timestamp": post.get("timestamp"),
+        "media_url": post.get("media_url"),
+        "permalink": post.get("permalink"),
+    }
+    if is_exploration:
+        event["is_exploration"] = True
+    return event
+
+
 def send_phase1_random_newsletter(user: Dict, posts: List[Dict]) -> List[str]:
     """Phase 1: Send 9 random events for initial discovery"""
     # Select 9 random events
@@ -155,18 +179,8 @@ def send_phase1_random_newsletter(user: Dict, posts: List[Dict]) -> List[str]:
     for post in sample:
         event_id = post.get("id")
         category = get_category_for_event(event_id)
-        
-        event = {
-            "event_id": event_id,
-            "id": event_id,
-            "title": post.get("caption", "")[:80].split('\n')[0] or "Event",
-            "description": post.get("caption", "")[:200],
-            "category": category,
-            "timestamp": post.get("timestamp"),
-            "media_url": post.get("media_url"),
-            "permalink": post.get("permalink"),
-        }
-        events.append(event)
+
+        events.append(build_event_from_post(post, category))
         sent_ids.append(event_id)
     
     # Generate and send email
@@ -237,16 +251,7 @@ def get_events_by_category(posts: List[Dict], category: str, exclude_ids: set, l
         
         cat = get_category_for_event(event_id)
         if cat == category:
-            event = {
-                "event_id": event_id,
-                "id": event_id,
-                "title": post.get("caption", "")[:80].split('\n')[0] or "Event",
-                "description": post.get("caption", "")[:200],
-                "category": cat,
-                "timestamp": post.get("timestamp"),
-                "media_url": post.get("media_url"),
-            }
-            matching.append(event)
+            matching.append(build_event_from_post(post, cat))
             exclude_ids.add(event_id)
             
             if len(matching) >= limit:
@@ -287,15 +292,7 @@ def get_exploration_events(posts: List[Dict], exclude_ids: set, preferred_catego
     result = []
     for post, category in exploration_candidates:
         event_id = post.get("id")
-        event = {
-            "event_id": event_id,
-            "id": event_id,
-            "title": post.get("caption", "")[:80].split('\n')[0] or "Event",
-            "description": post.get("caption", "")[:200],
-            "category": category,
-            "timestamp": post.get("timestamp"),
-            "is_exploration": True,  # Mark as exploration event
-        }
+        event = build_event_from_post(post, category, is_exploration=True)
         exclude_ids.add(event_id)
         result.append(event)
     
@@ -314,6 +311,21 @@ def store_user_top_categories(user_id: str, categories: List[str]) -> None:
         logger.info(f"Stored top categories: {categories}")
     except Exception as e:
         logger.warning(f"Could not store top categories: {e}")
+
+
+def top_up_events(posts: List[Dict], exclude_ids: set, limit: int) -> List[Dict]:
+    """Fill remaining slots with random events not already selected."""
+    available = [p for p in posts if p.get("id") not in exclude_ids]
+    if not available or limit <= 0:
+        return []
+    selected = random.sample(available, min(limit, len(available)))
+    result = []
+    for post in selected:
+        event_id = post.get("id")
+        category = get_category_for_event(event_id)
+        result.append(build_event_from_post(post, category))
+        exclude_ids.add(event_id)
+    return result
 
 
 def send_phase2_preference_newsletter(user: Dict, posts: List[Dict], phase1_ids: List[str]):
@@ -348,6 +360,12 @@ def send_phase2_preference_newsletter(user: Dict, posts: List[Dict], phase1_ids:
     selected_events.extend(exploration_events)
     exploration_cats = [e.get('category', 'unknown') for e in exploration_events]
     logger.debug(f"{len(exploration_events)} exploration from: {exploration_cats}")
+
+    if len(selected_events) < DEFAULT_PHASE2_TOTAL:
+        remaining = DEFAULT_PHASE2_TOTAL - len(selected_events)
+        top_ups = top_up_events(posts, exclude_ids, remaining)
+        selected_events.extend(top_ups)
+        logger.debug(f"{len(top_ups)} top-up events to reach {DEFAULT_PHASE2_TOTAL}")
     
     # Send email
     html = generate_personalized_email(user, selected_events, FEEDBACK_BASE_URL)
@@ -362,8 +380,11 @@ def send_phase2_preference_newsletter(user: Dict, posts: List[Dict], phase1_ids:
         raise
 
 
-def run_two_phase_newsletter(delay_minutes: int = 5):
-    """Run the complete two-phase newsletter flow"""
+def run_two_phase_newsletter(delay_minutes: int = 5, wait_for_interactions: Optional[bool] = None):
+    """Run the complete two-phase newsletter flow."""
+    if wait_for_interactions is None:
+        wait_for_interactions = WAIT_FOR_INTERACTIONS_ENV
+
     posts = load_posts()
     logger.info(f"Loaded {len(posts)} events from all_posts.json")
     
@@ -399,8 +420,11 @@ def run_two_phase_newsletter(delay_minutes: int = 5):
 
         for user in returning_users:
             logger.info(f"Processing: {user['email']}")
-            send_phase2_preference_newsletter(user, posts, [])
-            logger.info("Sent: Personalized events")
+            try:
+                send_phase2_preference_newsletter(user, posts, [])
+                logger.info("Sent: Personalized events")
+            except Exception as exc:
+                logger.error(f"Failed to send personalized newsletter to {user['email']}: {exc}")
 
     phase1_sent = {}
     if new_users:
@@ -415,10 +439,22 @@ def run_two_phase_newsletter(delay_minutes: int = 5):
             # Old code deleted user clicks which broke interaction detection.
 
             # Send Phase 1
-            sent_ids = send_phase1_random_newsletter(user, posts)
-            phase1_sent[user["id"]] = sent_ids
-            mark_user_onboarded(user)
-            logger.info("Phase 1 sent: 9 random events")
+            try:
+                sent_ids = send_phase1_random_newsletter(user, posts)
+                phase1_sent[user["id"]] = sent_ids
+                mark_user_onboarded(user)
+                logger.info("Phase 1 sent: 9 random events")
+            except Exception as exc:
+                logger.error(f"Failed to send Phase 1 to {user['email']}: {exc}")
+
+        if not wait_for_interactions:
+            logger.info("="*50)
+            logger.info("SKIPPING PHASE 2 WAIT (CRON MODE)")
+            logger.info("New users will receive Phase 2 on the next scheduled run.")
+            logger.info("="*50)
+            logger.info("TWO-PHASE NEWSLETTER COMPLETE!")
+            logger.info("="*50)
+            return
 
         logger.info("="*50)
         logger.info(f"WAITING UP TO {delay_minutes} MINUTES...")
@@ -472,9 +508,12 @@ def run_two_phase_newsletter(delay_minutes: int = 5):
                 if interaction_count > 0 or prefs_changed:
                     logger.info(f">>> INTERACTION DETECTED for {user['email']}! (interactions={interaction_count}, prefs_changed={prefs_changed})")
                     phase1_ids = phase1_sent.get(user["id"], [])
-                    send_phase2_preference_newsletter(user, posts, phase1_ids)
-                    logger.info("Phase 2 sent: Personalized events (Instant)")
-                    phase2_sent_users.add(user["id"])
+                    try:
+                        send_phase2_preference_newsletter(user, posts, phase1_ids)
+                        logger.info("Phase 2 sent: Personalized events (Instant)")
+                        phase2_sent_users.add(user["id"])
+                    except Exception as exc:
+                        logger.error(f"Failed to send Phase 2 to {user['email']}: {exc}")
             
             time.sleep(poll_interval)
 
@@ -487,8 +526,11 @@ def run_two_phase_newsletter(delay_minutes: int = 5):
         for user in remaining_users:
             logger.info(f"Processing (Default): {user['email']}")
             phase1_ids = phase1_sent.get(user["id"], [])
-            send_phase2_preference_newsletter(user, posts, phase1_ids)
-            logger.info("Phase 2 sent: Default Recommendation events")
+            try:
+                send_phase2_preference_newsletter(user, posts, phase1_ids)
+                logger.info("Phase 2 sent: Default Recommendation events")
+            except Exception as exc:
+                logger.error(f"Failed to send Phase 2 to {user['email']}: {exc}")
     
     logger.info("="*50)
     logger.info("TWO-PHASE NEWSLETTER COMPLETE!")
@@ -503,5 +545,22 @@ if __name__ == "__main__":
     for noisy_logger in ['httpx', 'httpcore', 'hpack', 'h2', 'urllib3']:
         _logging.getLogger(noisy_logger).setLevel(_logging.WARNING)
     
-    # Run the two-phase flow with 5-minute delay
-    run_two_phase_newsletter(delay_minutes=5)
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--delay-minutes", type=int, default=5)
+    parser.add_argument("--wait-for-interactions", action="store_true")
+    parser.add_argument("--no-wait-for-interactions", action="store_true")
+    args = parser.parse_args()
+
+    wait_for_interactions = None
+    if args.wait_for_interactions:
+        wait_for_interactions = True
+    if args.no_wait_for_interactions:
+        wait_for_interactions = False
+
+    # Run the flow; default mode uses NEWSLETTER_WAIT_FOR_INTERACTIONS env flag.
+    run_two_phase_newsletter(
+        delay_minutes=args.delay_minutes,
+        wait_for_interactions=wait_for_interactions,
+    )

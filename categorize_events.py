@@ -1,3 +1,9 @@
+"""
+Fallback for uncategorized events. Automatically assign a single, 
+fixed category to uncategorized events in Supabase, 
+using OpenAI first and Gemini as a fallback if OpenAI fails or gives an invalid answer.
+"""
+
 import os
 import requests
 import json

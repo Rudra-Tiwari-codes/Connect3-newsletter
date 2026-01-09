@@ -61,3 +61,5 @@ __pycache__/
 venv/
 
 data/
+
+NEWSLETTER_SEND_ISSUES.md
