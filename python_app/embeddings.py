@@ -181,8 +181,8 @@ def embed_user(user_id: str, decay_half_life_days: float = 30.0) -> List[float]:
             created_at = datetime.fromisoformat(created_at_str.replace("Z", "+00:00"))
             days_old = (now - created_at).total_seconds() / 86400  # Convert to days
             time_decay = math.exp(-decay_lambda * days_old)
-          except Exception as e:
-            logger.warning(f"Failed to parse created_at timestamp: {created_at_str}: {e}")
+          except Exception:
+            pass  # Keep default decay of 1.0
         
         # Apply both base weight and time decay
         base_weight = base_weights.get(i.get("interaction_type"), 0.0)
@@ -205,6 +205,13 @@ def embed_user(user_id: str, decay_half_life_days: float = 30.0) -> List[float]:
       "social_cultural": "social events, parties, cultural activities",
       "entrepreneurship": "startups, entrepreneurship, business",
       "sports_fitness": "sports, fitness, physical activities",
+      "arts_music": "arts, music, creative performances, exhibitions",
+      "volunteering_community": "volunteering, community service, charity events",
+      "food_dining": "food, dining, cooking, culinary experiences",
+      "travel_adventure": "travel, adventure, outdoor activities, exploration",
+      "health_wellness": "health, wellness, mental health, self-care",
+      "environment_sustainability": "environment, sustainability, green initiatives, climate",
+      "gaming_esports": "gaming, esports, video games, tournaments",
     }
     interests: List[str] = []
     for key, description in pref_mapping.items():
