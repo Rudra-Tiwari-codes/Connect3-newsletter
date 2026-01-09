@@ -61,10 +61,14 @@ class handler(BaseHTTPRequestHandler):
             _send_plain(self, 400, "Missing uid.")
             return
 
+        # Security: Token validation is mandatory - never skip
         if not UNSUBSCRIBE_TOKEN_SECRET:
-            _send_plain(self, 500, "Unsubscribe token secret not configured.")
+            logger.error("CRITICAL: UNSUBSCRIBE_TOKEN_SECRET not configured - rejecting request")
+            _send_plain(self, 500, "An error occurred. Please try again later.")
             return
+        
         if not _is_valid_token(user_id, token, UNSUBSCRIBE_TOKEN_SECRET):
+            logger.warning(f"Invalid unsubscribe token attempt for user: {user_id[:8] if user_id else 'unknown'}...")
             _send_plain(self, 403, "Invalid or missing token.")
             return
 
