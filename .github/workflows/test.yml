@@ -1,12 +1,22 @@
 name: Tests
 
 on:
+  # Triggers the work flow on push/pull request
   push:
+    # Branch executed on push
     branches: [main]
   pull_request:
+    # Branch executed on pull_request
     branches: [main]
+  # Allows runnign workflow manually from Actions tab
+  workflow_dispatch:
+  # Bi-weekly run
+  schedule: 
+    -cron: "0 0 * * 1,4"
+
 
 jobs:
+  # Jobs are run in parallel by default
   test:
     runs-on: ubuntu-latest
     

@@ -435,7 +435,7 @@
         submitBtn.disabled = true;
         submitBtn.textContent = "Saving your spot...";
 
-        const endpoint = "/subscribe";
+        const endpoint = "/api/subscribe";
 
         try {
           const response = await fetch(endpoint, {

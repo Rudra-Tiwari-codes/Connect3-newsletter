@@ -24,6 +24,10 @@
             "dest": "api/feedback.py"
         },
         {
+            "src": "/api/subscribe(.*)",
+            "dest": "api/subscribe.py"
+        },
+        {
             "src": "/subscribe(.*)",
             "dest": "api/subscribe.py"
         },
