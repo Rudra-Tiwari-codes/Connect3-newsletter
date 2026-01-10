@@ -80,10 +80,10 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
-          GMAIL_FROM_EMAIL: ${{ secrets.GMAIL_FROM_EMAIL }}
+          SENDER_EMAIL: ${{ secrets.SENDER_EMAIL }}
           UNSUBSCRIBE_TOKEN_SECRET: ${{ secrets.UNSUBSCRIBE_TOKEN_SECRET }}
-          FEEDBACK_BASE_URL: ${{ secrets.FEEDBACK_BASE_URL }}
-          NEWSLETTER_WAIT_FOR_INTERACTIONS: "false"
+          NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
+          NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL }}
           PYTHONUNBUFFERED: "1"
         run: |
           python scripts_py/two_phase_newsletter.py --no-wait-for-interactions --delay-minutes 0

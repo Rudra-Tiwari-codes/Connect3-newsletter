@@ -7,15 +7,14 @@ Falls back to in-memory NumPy search if pgvector is not available.
 
 from typing import Any, Dict, List, Optional, Set
 
-from .config import get_env
 from .logger import get_logger
 from .supabase_client import supabase
 
 logger = get_logger(__name__)
 
 # Configuration
-USE_PGVECTOR = get_env("USE_PGVECTOR", "true").lower() == "true"
-PGVECTOR_TABLE = get_env("PGVECTOR_TABLE", "event_embeddings_v2")
+USE_PGVECTOR = True
+PGVECTOR_TABLE = "event_embeddings_v2"
 
 
 def search_similar_events(

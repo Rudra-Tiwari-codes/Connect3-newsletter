@@ -27,9 +27,10 @@ from python_app.config import get_env
 logger = get_logger(__name__)
 
 # Base URL for feedback links (configurable for local dev)
-FEEDBACK_BASE_URL = get_env("FEEDBACK_BASE_URL", "https://connect3-newsletter.vercel.app/feedback")
+SITE_URL = get_env("NEXT_PUBLIC_SITE_URL") or get_env("NEXT_PUBLIC_APP_URL") or "https://connect3-newsletter.vercel.app"
+FEEDBACK_BASE_URL = f"{SITE_URL.rstrip('/')}/feedback"
 DEFAULT_PHASE2_TOTAL = 9
-WAIT_FOR_INTERACTIONS_ENV = get_env("NEWSLETTER_WAIT_FOR_INTERACTIONS", "false").lower() == "true"
+WAIT_FOR_INTERACTIONS_ENV = False
 
 
 def log_email_sent(user_id: str, events_sent: List[str], status: str = "sent", error_message: str = None) -> None:
@@ -559,7 +560,7 @@ if __name__ == "__main__":
     if args.no_wait_for_interactions:
         wait_for_interactions = False
 
-    # Run the flow; default mode uses NEWSLETTER_WAIT_FOR_INTERACTIONS env flag.
+    # Run the flow; default mode does not wait unless explicitly set via CLI flags.
     run_two_phase_newsletter(
         delay_minutes=args.delay_minutes,
         wait_for_interactions=wait_for_interactions,

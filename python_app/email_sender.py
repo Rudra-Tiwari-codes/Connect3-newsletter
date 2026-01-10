@@ -18,8 +18,10 @@ logger = get_logger(__name__)
 
 GMAIL_USER = get_env("GMAIL_USER")
 GMAIL_APP_PASSWORD = get_env("GMAIL_APP_PASSWORD")
-FROM_EMAIL = get_env("GMAIL_FROM_EMAIL") or GMAIL_USER or "noreply@example.com"
-FEEDBACK_URL = "https://connect3-newsletter.vercel.app/feedback"
+SENDER_EMAIL = get_env("SENDER_EMAIL")
+FROM_EMAIL = SENDER_EMAIL or GMAIL_USER or "noreply@example.com"
+SITE_URL = get_env("NEXT_PUBLIC_SITE_URL") or get_env("NEXT_PUBLIC_APP_URL") or "https://connect3-newsletter.vercel.app"
+FEEDBACK_URL = f"{SITE_URL.rstrip('/')}/feedback"
 SMTP_TIMEOUT_SEC = max(1, int(get_env("SMTP_TIMEOUT_SEC", "30") or "30"))
 
 

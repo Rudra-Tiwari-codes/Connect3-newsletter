@@ -21,7 +21,7 @@ from python_app.supabase_client import supabase
 logger = logging.getLogger(__name__)
 
 UNSUBSCRIBE_TOKEN_SECRET = os.environ.get("UNSUBSCRIBE_TOKEN_SECRET")
-UNSUBSCRIBE_REDIRECT_URL = os.environ.get("UNSUBSCRIBE_REDIRECT_URL") or os.environ.get("UNSUBSCRIBE_CONFIRM_URL")
+UNSUBSCRIBE_REDIRECT_URL = os.environ.get("NEXT_PUBLIC_SITE_URL") or os.environ.get("NEXT_PUBLIC_APP_URL")
 
 
 def _expected_token(user_id: str, secret: str) -> str:

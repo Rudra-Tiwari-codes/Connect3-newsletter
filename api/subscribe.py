@@ -18,8 +18,8 @@ from python_app.supabase_client import supabase
 
 logger = logging.getLogger(__name__)
 
-USERS_TABLE = os.environ.get("SUPABASE_USERS_TABLE") or "users"
-ALLOWED_ORIGIN = os.environ.get("SUBSCRIBE_ALLOWED_ORIGIN")
+USERS_TABLE = "users"
+ALLOWED_ORIGIN = None
 
 EMAIL_PATTERN = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
 
@@ -164,4 +164,3 @@ class handler(BaseHTTPRequestHandler):
             return
 
         _send_json(self, 200, {"ok": True})
-

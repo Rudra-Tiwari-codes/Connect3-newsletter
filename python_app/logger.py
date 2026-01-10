@@ -11,15 +11,9 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-from .config import get_env
-
-# Log level from environment (default: INFO)
-LOG_LEVEL = get_env("LOG_LEVEL", "INFO").upper()
-LOG_FILE = get_env("LOG_FILE")  # Optional file path for logging
-LOG_FORMAT = get_env(
-    "LOG_FORMAT",
-    "%(asctime)s | %(levelname)-8s | %(name)-20s | %(message)s"
-)
+LOG_LEVEL = "INFO"
+LOG_FILE = None  # Optional file path for logging
+LOG_FORMAT = "%(asctime)s | %(levelname)-8s | %(name)-20s | %(message)s"
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 # Map string levels to logging constants

@@ -34,6 +34,7 @@ logger = logging.getLogger(__name__)
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_KEY") or os.environ.get("SUPABASE_KEY")
+APP_URL = os.environ.get("NEXT_PUBLIC_APP_URL") or os.environ.get("NEXT_PUBLIC_SITE_URL") or "https://connect3.app"
 
 # Time decay: clicks older than this many days don't affect preferences
 PREFERENCE_DECAY_DAYS = 15
@@ -332,6 +333,7 @@ class handler(BaseHTTPRequestHandler):
     
     def do_GET(self):
         """Handle GET requests for feedback tracking."""
+        app_base = APP_URL.rstrip("/")
         try:
             # Parse query parameters
             parsed = urlparse(self.path)
@@ -346,7 +348,7 @@ class handler(BaseHTTPRequestHandler):
                 email_sent_at = validate_timestamp(params.get('sent', [None])[0])
             except ValidationError as e:
                 logger.warning(f"Validation error: {e}")
-                self.send_redirect('https://connect3.app?error=invalid_params')
+                self.send_redirect(f"{app_base}?error=invalid_params")
                 return
             
             # Rate limiting check
@@ -364,8 +366,8 @@ class handler(BaseHTTPRequestHandler):
                 logger.info(f"Skipping preference update: email older than {PREFERENCE_DECAY_DAYS} days")
             
             # Redirect to success page
-            self.send_redirect('https://connect3.app')
+            self.send_redirect(app_base)
             
         except Exception as e:
             logger.exception(f"Unexpected error in feedback handler: {e}")
-            self.send_redirect('https://connect3.app?error=server_error')
+            self.send_redirect(f"{app_base}?error=server_error")
