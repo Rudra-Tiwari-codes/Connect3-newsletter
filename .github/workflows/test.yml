@@ -18,6 +18,11 @@ concurrency:
   group: newsletter-pipeline
   cancel-in-progress: false
 
+env:
+  SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+  SUPABASE_KEY: ${{ secrets.SUPABASE_KEY || secrets.SUPABASE_SERVICE_KEY || secrets.SUPABASE_SECRET_KEY }}
+  SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY || secrets.SUPABASE_SECRET_KEY || secrets.SUPABASE_KEY }}
+  SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY || secrets.SUPABASE_SERVICE_KEY || secrets.SUPABASE_KEY }}
 
 jobs:
   # Jobs are run in parallel by default
@@ -43,16 +48,12 @@ jobs:
 
       - name: Run tests
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
-          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
-          SUPABASE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           pytest tests/ -v --tb=short
 
   newsletter:
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -73,10 +74,6 @@ jobs:
 
       - name: Run newsletter pipeline (cron mode)
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
-          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
-          SUPABASE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
