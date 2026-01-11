@@ -12,7 +12,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Space+Grotesk:wght@400;500;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Libre+Baskerville:wght@400;700&display=swap"
       rel="stylesheet"
     />
     <style>
@@ -23,7 +23,13 @@
         --ink-600: #475569;
         --card: rgba(255, 255, 255, 0.82);
         --stroke: rgba(15, 23, 42, 0.12);
-        --accent: #ff8a3d;
+        --neutral-100: #f5f5f5;
+        --neutral-200: #e2e8f0;
+        --neutral-300: #cbd5e1;
+        --neutral-500: #64748b;
+        --purple-200: #e9d5ff;
+        --pink-100: #fce7f3;
+        --pink-600: #e30076;
       }
 
       * {
@@ -32,13 +38,13 @@
 
       body {
         margin: 0;
-        font-family: "Space Grotesk", system-ui, sans-serif;
+        font-family: "Geist", system-ui, sans-serif;
         color: var(--ink-900);
         background: #f8f4ec;
       }
 
       .font-display {
-        font-family: "Fraunces", serif;
+        font-family: "Libre Baskerville", serif;
       }
 
       .hero-surface {
@@ -47,16 +53,11 @@
         overflow: hidden;
         background:
           radial-gradient(
-              1200px circle at 12% 8%,
-              #fff1d9 0%,
-              rgba(255, 241, 217, 0) 60%
+              140% 140% at 85% 85%,
+              #f5c4e8 0%,
+              rgba(245, 196, 232, 0) 55%
             ),
-          radial-gradient(
-              900px circle at 88% 12%,
-              #d8ecff 0%,
-              rgba(216, 236, 255, 0) 55%
-            ),
-          linear-gradient(160deg, #f7efe6 0%, #f1f6ff 100%);
+          linear-gradient(180deg, #fbe9fb 0%, #f4d2f7 45%, #d9d9fb 100%);
       }
 
       .hero-pattern {
@@ -141,53 +142,12 @@
         box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
       }
 
-      .social-proof {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        font-size: 0.9rem;
-        color: var(--ink-600);
-      }
-
-      .avatars {
-        display: flex;
-        margin-right: 4px;
-      }
-
-      .avatar {
-        width: 36px;
-        height: 36px;
-        border-radius: 999px;
-        display: grid;
-        place-items: center;
-        font-size: 0.7rem;
-        font-weight: 600;
-        color: #fff;
-        border: 2px solid rgba(255, 255, 255, 0.9);
-        margin-left: -10px;
-      }
-
-      .avatar:first-child {
-        margin-left: 0;
-      }
-
-      .avatar.one {
-        background: #0f172a;
-      }
-      .avatar.two {
-        background: #475569;
-      }
-      .avatar.three {
-        background: #64748b;
-      }
-
       .card {
-        background: var(--card);
+        background: #fff;
         border-radius: 28px;
-        border: 1px solid var(--stroke);
+        border: 1px solid var(--neutral-200);
         padding: 32px;
-        box-shadow: 0 24px 40px rgba(15, 23, 42, 0.08);
-        backdrop-filter: blur(10px);
+        box-shadow: 0 20px 32px rgba(15, 23, 42, 0.08);
       }
 
       .card h2 {
@@ -203,50 +163,54 @@
       .field-row {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 16px;
+        gap: 20px;
         margin-top: 20px;
       }
 
       label {
-        display: grid;
-        gap: 8px;
+        display: block;
+        width: 100%;
         font-size: 0.85rem;
         color: var(--ink-700);
       }
 
       input {
-        border: 1px solid var(--stroke);
-        border-radius: 16px;
-        padding: 12px 14px;
+        border: 1px solid var(--neutral-200);
+        border-radius: 999px;
+        padding: 10px 16px;
         font-size: 0.95rem;
         outline: none;
-        background: rgba(255, 255, 255, 0.9);
+        background: #fff;
         color: var(--ink-900);
+        width: 100%;
       }
 
       input:focus {
-        border-color: transparent;
-        box-shadow: 0 0 0 3px rgba(255, 138, 61, 0.35);
+        border-color: var(--neutral-300);
+        box-shadow: 0 0 0 3px rgba(203, 213, 225, 0.45);
+      }
+
+      input::placeholder {
+        color: var(--neutral-500);
       }
 
       button {
         margin-top: 18px;
         width: 100%;
         border: none;
-        border-radius: 16px;
-        background: #0f172a;
+        border-radius: 999px;
+        background: #111827;
         color: #fff;
-        font-weight: 600;
+        font-weight: 500;
         padding: 12px 16px;
         cursor: pointer;
         font-size: 0.95rem;
-        transition: transform 200ms ease, background 200ms ease;
-        box-shadow: 0 16px 24px rgba(15, 23, 42, 0.18);
+        transition: transform 150ms ease;
       }
 
       button:hover {
-        background: #1e293b;
-        transform: translateY(-2px);
+        background: #1f2937;
+        transform: scale(0.97);
       }
 
       button:disabled {
@@ -330,65 +294,47 @@
         <section class="fade-up">
           <p class="eyebrow">Connect3 Newsletter</p>
           <h1 class="hero-title font-display">
-            A bi-weekly newsletter to help you stay connected with personalized
-            events and experiences.
+            Never miss an event with the Connect3 Newsletter
           </h1>
           <p class="hero-body">
-            Get curated updates, new experiences, and community wins from
-            Connect3. Designed to keep you in the loop without the clutter.
+            Personalized biweekly updates to help you find the best events on campus
           </p>
-          <div class="pill-row">
-            <span class="pill">Founder notes</span>
-            <span class="pill">Curated events</span>
-            <span class="pill">Signal over noise</span>
-          </div>
-          <div class="social-proof">
-            <div class="avatars">
-              <span class="avatar one">C3</span>
-              <span class="avatar two">KJ</span>
-              <span class="avatar three">AD</span>
-            </div>
-            <span>Joined by 4,200+ builders this month.</span>
-          </div>
         </section>
 
         <section class="card fade-up stagger-2">
-          <form id="signup-form">
+          <form id="signup-form" action="/api/subscribe" method="post">
             <div>
               <h2 class="font-display">Join the list</h2>
-              <p>We send two emails a week. Get started now.</p>
+              <p>Biweekly emails about events and people.</p>
             </div>
 
             <div class="field-row">
               <label>
-                <span>First name</span>
                 <input
                   name="firstName"
                   type="text"
                   autocomplete="given-name"
-                  placeholder="Taylor"
+                  placeholder="First Name"
                   required
                 />
               </label>
               <label>
-                <span>Last name</span>
                 <input
                   name="lastName"
                   type="text"
                   autocomplete="family-name"
-                  placeholder="Jordan"
+                  placeholder="Last Name"
                   required
                 />
               </label>
             </div>
 
             <label style="margin-top: 20px;">
-              <span>Email address</span>
               <input
                 name="email"
                 type="email"
                 autocomplete="email"
-                placeholder="taylor@company.com"
+                placeholder="you@example.edu.au"
                 required
               />
             </label>
