@@ -269,6 +269,23 @@ def update_preferences(user_id: str, category: str, action: str) -> None:
             'gaming_esports'
         ]
         
+        def coerce_score(value, fallback):
+            try:
+                return float(value)
+            except (TypeError, ValueError):
+                return fallback
+
+        def normalize_scores(scores):
+            total = 0.0
+            for cat in ALL_CATEGORIES:
+                total += max(0.0, coerce_score(scores.get(cat), UNIFORM_BASELINE))
+            if total <= 0:
+                return {cat: UNIFORM_BASELINE for cat in ALL_CATEGORIES}
+            return {
+                cat: max(0.0, coerce_score(scores.get(cat), UNIFORM_BASELINE)) / total
+                for cat in ALL_CATEGORIES
+            }
+
         prefs = (
             supabase.table('user_preferences')
             .select('*')
@@ -278,29 +295,37 @@ def update_preferences(user_id: str, category: str, action: str) -> None:
         )
         
         if prefs.data:
-            current_score = prefs.data[0].get(category, UNIFORM_BASELINE)
+            current_score = coerce_score(prefs.data[0].get(category), UNIFORM_BASELINE)
             if action == 'like':
                 new_score = min(1.0, current_score + SCORE_INCREMENT)
             else:
                 new_score = max(0.0, current_score - SCORE_INCREMENT)
-            
-            supabase.table('user_preferences').update({
-                category: new_score
-            }).eq('user_id', user_id).execute()
-            logger.debug(f"Updated preference: {category} = {new_score:.3f}")
+
+            updated_scores = {
+                cat: coerce_score(prefs.data[0].get(cat), UNIFORM_BASELINE)
+                for cat in ALL_CATEGORIES
+            }
+            updated_scores[category] = new_score
+            normalized_scores = normalize_scores(updated_scores)
+
+            supabase.table('user_preferences').update(
+                normalized_scores
+            ).eq('user_id', user_id).execute()
+            logger.debug(
+                f"Updated preference: {category} = {normalized_scores.get(category, 0.0):.3f}"
+            )
         else:
             # New user: create COMPLETE preference record with all 13 categories
             # Start with uniform baseline for all categories
-            pref_record = {'user_id': user_id}
-            for cat in ALL_CATEGORIES:
-                pref_record[cat] = UNIFORM_BASELINE
+            pref_scores = {cat: UNIFORM_BASELINE for cat in ALL_CATEGORIES}
             
             # Adjust the interacted category based on action
             if action == 'like':
-                pref_record[category] = UNIFORM_BASELINE + 0.1
+                pref_scores[category] = UNIFORM_BASELINE + 0.1
             else:
-                pref_record[category] = max(0.0, UNIFORM_BASELINE - SCORE_INCREMENT)
-            
+                pref_scores[category] = max(0.0, UNIFORM_BASELINE - SCORE_INCREMENT)
+
+            pref_record = {'user_id': user_id, **normalize_scores(pref_scores)}
             supabase.table('user_preferences').insert(pref_record).execute()
             logger.info(f"Created complete preferences for user {user_id[:8]}... with {len(ALL_CATEGORIES)} categories")
     except Exception as e:

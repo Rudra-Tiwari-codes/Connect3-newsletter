@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Optional
 
 from .supabase_client import ensure_ok, supabase
 from .logger import get_logger
+from .categories import CONNECT3_CATEGORIES
 
 logger = get_logger(__name__)
 
@@ -40,7 +41,7 @@ def _compute_time_decayed_preferences(
   Uses exponential decay: weight = e^(-λ × days_old)
   
   Returns:
-      Dict mapping category names to scores (0.0 to 1.0)
+      Dict mapping category names to scores (0.0 to 1.0), normalized to sum to 1.
   """
   decay_lambda = math.log(2) / half_life_days
   now = datetime.now(timezone.utc)
@@ -108,16 +109,23 @@ def _compute_time_decayed_preferences(
   # Normalize to 0.0-1.0 range (sigmoid-like transformation)
   # Score of 0 -> 0.5, positive -> toward 1.0, negative -> toward 0.0
   result: Dict[str, float] = {}
-  for cat, score in category_scores.items():
-    total_weight = category_weights.get(cat, 1.0)
-    if total_weight > 0:
-      normalized = score / total_weight  # Range roughly -1 to 1
-      # Transform to 0-1 range: (normalized + 1) / 2, clamped
-      result[cat] = max(0.0, min(1.0, (normalized + 1) / 2))
+  for cat in CONNECT3_CATEGORIES:
+    if cat in category_scores:
+      total_weight = category_weights.get(cat, 1.0)
+      if total_weight > 0:
+        normalized = category_scores[cat] / total_weight  # Range roughly -1 to 1
+        # Transform to 0-1 range: (normalized + 1) / 2, clamped
+        result[cat] = max(0.0, min(1.0, (normalized + 1) / 2))
+      else:
+        result[cat] = DEFAULT_CATEGORY_SCORE
     else:
       result[cat] = DEFAULT_CATEGORY_SCORE
-  
-  return result
+
+  total = sum(result.values())
+  if total <= 0:
+    return {cat: DEFAULT_CATEGORY_SCORE for cat in CONNECT3_CATEGORIES}
+
+  return {cat: result[cat] / total for cat in CONNECT3_CATEGORIES}
 
 
 def _cluster_match(event: Dict[str, Any], prefs: Dict[str, Any], decayed_prefs: Dict[str, float]) -> float:
