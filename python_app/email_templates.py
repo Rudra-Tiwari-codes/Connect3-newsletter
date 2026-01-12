@@ -92,22 +92,21 @@ def generate_personalized_email(user: Dict[str, Any], events: List[Dict[str, Any
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap');
-  </style>
 </head>
-<body style="margin:0; padding:0; background:#f3f4f6; font-family:'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+<body style="margin:0; padding:0; background:#ffffff; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
   <div style="max-width:640px; margin:0 auto; background:#fff; font-family:'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
-      <tr>
-        <td background="{banner_url}" style="background:#111827 url('{banner_url}') center/cover no-repeat; color:#fff; padding:24px; text-align:center; font-family:'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
-          <h1 style="margin:0;">Your Weekly Event Picks</h1>
-          <p style="margin:8px 0 0 0;">Hi {user.get('name') or user.get('email') or 'there'}! We picked {len(events)} events for you.</p>
-        </td>
-      </tr>
-    </table>
     <div style="padding:24px;">
-      {''.join(cards)}
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+        <tr>
+          <td background="{banner_url}" bgcolor="#111827" style="background:#111827 url('{banner_url}') center/cover no-repeat; color:#fff; padding:24px; text-align:center; font-family:'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+            <h1 style="margin:0; color:#FFFFFF; font-weight:700;">Your Weekly Event Picks</h1>
+            <p style="margin:8px 0 0 0; color:#FFFFFF;">Hi {user.get('name') or user.get('email') or 'there'}! We picked {len(events)} events for you.</p>
+          </td>
+        </tr>
+      </table>
+      <div style="margin-top:24px;">
+        {''.join(cards)}
+      </div>
     </div>
     <div style="background:#f9fafb; padding:16px; text-align:center; color:#6b7280; font-size:12px; font-family:'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
       <p style="margin:0;">Connect3 Newsletter</p>
