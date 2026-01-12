@@ -92,11 +92,22 @@ jobs:
           import os
           url = os.getenv('SUPABASE_URL', '')
           key = os.getenv('SUPABASE_SERVICE_KEY') or os.getenv('SUPABASE_SECRET_KEY') or os.getenv('SUPABASE_KEY') or ''
-          print('SUPABASE_URL:', url[:30] + '...' if len(url) > 30 else url)
+          print('SUPABASE_URL (full):', url)
+          print('URL has trailing slash:', url.endswith('/'))
           print('Key length:', len(key))
-          print('Key prefix:', key[:10] + '...' if len(key) > 10 else 'TOO SHORT')
           print('Key suffix:', '...' + key[-10:] if len(key) > 10 else 'TOO SHORT')
-          print('Key starts with eyJ:', key.startswith('eyJ'))
+          
+          # Test the connection
+          import requests
+          test_url = url.rstrip('/') + '/rest/v1/users?select=id&limit=1'
+          headers = {'apikey': key, 'Authorization': f'Bearer {key}'}
+          print('Testing URL:', test_url)
+          r = requests.get(test_url, headers=headers)
+          print('Response status:', r.status_code)
+          if r.status_code != 200:
+              print('Response body:', r.text[:200])
+          else:
+              print('Connection successful!')
           "
           echo "=== Running newsletter ==="
           python scripts_py/two_phase_newsletter.py --no-wait-for-interactions --delay-minutes 0
