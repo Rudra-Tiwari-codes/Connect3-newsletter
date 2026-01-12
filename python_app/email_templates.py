@@ -37,6 +37,7 @@ def generate_personalized_email(user: Dict[str, Any], events: List[Dict[str, Any
   email_sent_at = datetime.now(timezone.utc).isoformat()
 
   tracking_base = _tracking_base_from_feedback_url(feedback_base_url)
+  banner_url = get_env("NEWSLETTER_BANNER_URL") or f"{tracking_base}/assets/banner.png"
   user_id = user.get('id')
 
   unsubscribe_html = ""
@@ -68,7 +69,7 @@ def generate_personalized_email(user: Dict[str, Any], events: List[Dict[str, Any
     
     cards.append(
       f"""
-      <div style="background: #fff; border-radius: 10px; padding: 16px; margin-bottom: 16px; border: 1px solid #e5e7eb;">
+      <div style="background: #F8F6FF; border-radius: 10px; padding: 16px; margin-bottom: 16px; border: 1px solid #DFCAFB; font-family:'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
         <h3 style="margin: 0 0 8px 0; color: #111827;">{evt.get('title', 'Event')}</h3>
         <p style="margin: 0 0 8px 0; color: #4b5563;">{evt.get('description', '')}</p>
         <p style="margin: 0 0 12px 0; color: #6b7280; font-size: 14px;">
@@ -77,8 +78,8 @@ def generate_personalized_email(user: Dict[str, Any], events: List[Dict[str, Any
           <strong>Category:</strong> {format_category(evt.get('category'))}
         </p>
         <div style="margin-top: 10px;">
-          <a href="{like_url}" style="background: #22c55e; color: white; padding: 8px 14px; text-decoration: none; border-radius: 6px; margin-right: 8px;">Interested</a>
-          <a href="{dislike_url}" style="background: #ef4444; color: white; padding: 8px 14px; text-decoration: none; border-radius: 6px;">Not interested</a>
+          <a href="{like_url}" style="background: #854ECB; color: white; padding: 8px 14px; text-decoration: none; border-radius: 100px; margin-right: 8px; display: inline-block;">Interested</a>
+          <a href="{dislike_url}" style="background: #EEEEEE; border: 0.5px solid #3F3F3F; color: black; padding: 8px 14px; text-decoration: none; border-radius: 100px; display: inline-block;">Not interested</a>
         </div>
       </div>
       """
@@ -88,17 +89,27 @@ def generate_personalized_email(user: Dict[str, Any], events: List[Dict[str, Any
   return f"""
 <!DOCTYPE html>
 <html>
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
-<body style="margin:0; padding:0; background:#f3f4f6; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
-  <div style="max-width:640px; margin:0 auto; background:#fff;">
-    <div style="background:#4f46e5; color:#fff; padding:24px; text-align:center;">
-      <h1 style="margin:0;">Your Weekly Event Picks</h1>
-      <p style="margin:8px 0 0 0;">Hi {user.get('name') or user.get('email') or 'there'}! We picked {len(events)} events for you.</p>
-    </div>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap');
+  </style>
+</head>
+<body style="margin:0; padding:0; background:#f3f4f6; font-family:'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <div style="max-width:640px; margin:0 auto; background:#fff; font-family:'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+      <tr>
+        <td background="{banner_url}" style="background:#111827 url('{banner_url}') center/cover no-repeat; color:#fff; padding:24px; text-align:center; font-family:'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+          <h1 style="margin:0;">Your Weekly Event Picks</h1>
+          <p style="margin:8px 0 0 0;">Hi {user.get('name') or user.get('email') or 'there'}! We picked {len(events)} events for you.</p>
+        </td>
+      </tr>
+    </table>
     <div style="padding:24px;">
       {''.join(cards)}
     </div>
-    <div style="background:#f9fafb; padding:16px; text-align:center; color:#6b7280; font-size:12px;">
+    <div style="background:#f9fafb; padding:16px; text-align:center; color:#6b7280; font-size:12px; font-family:'Geist',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
       <p style="margin:0;">Connect3 Newsletter</p>
       {unsubscribe_html}
     </div>

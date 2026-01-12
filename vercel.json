@@ -20,6 +20,10 @@
             "dest": "/web/$1"
         },
         {
+            "src": "/assets/(.*)",
+            "dest": "/assets/$1"
+        },
+        {
             "src": "/feedback(.*)",
             "dest": "api/feedback.py"
         },
