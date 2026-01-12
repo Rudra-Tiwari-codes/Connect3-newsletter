@@ -6,6 +6,10 @@
             "use": "@vercel/static"
         },
         {
+            "src": "assets/**",
+            "use": "@vercel/static"
+        },
+        {
             "src": "api/*.py",
             "use": "@vercel/python"
         }
