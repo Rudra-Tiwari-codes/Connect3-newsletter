@@ -87,6 +87,16 @@ jobs:
           NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL }}
           PYTHONUNBUFFERED: "1"
         run: |
-          echo "Checking env vars are set..."
-          python -c "import os; print('SUPABASE_URL set:', bool(os.getenv('SUPABASE_URL'))); print('SUPABASE_SERVICE_KEY set:', bool(os.getenv('SUPABASE_SERVICE_KEY'))); print('SUPABASE_SECRET_KEY set:', bool(os.getenv('SUPABASE_SECRET_KEY'))); print('SUPABASE_KEY set:', bool(os.getenv('SUPABASE_KEY')))"
+          echo "=== Debug: Checking env vars ==="
+          python -c "
+          import os
+          url = os.getenv('SUPABASE_URL', '')
+          key = os.getenv('SUPABASE_SERVICE_KEY') or os.getenv('SUPABASE_SECRET_KEY') or os.getenv('SUPABASE_KEY') or ''
+          print('SUPABASE_URL:', url[:30] + '...' if len(url) > 30 else url)
+          print('Key length:', len(key))
+          print('Key prefix:', key[:10] + '...' if len(key) > 10 else 'TOO SHORT')
+          print('Key suffix:', '...' + key[-10:] if len(key) > 10 else 'TOO SHORT')
+          print('Key starts with eyJ:', key.startswith('eyJ'))
+          "
+          echo "=== Running newsletter ==="
           python scripts_py/two_phase_newsletter.py --no-wait-for-interactions --delay-minutes 0
