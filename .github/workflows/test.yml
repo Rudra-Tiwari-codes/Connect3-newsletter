@@ -87,4 +87,6 @@ jobs:
           NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL }}
           PYTHONUNBUFFERED: "1"
         run: |
+          echo "Checking env vars are set..."
+          python -c "import os; print('SUPABASE_URL set:', bool(os.getenv('SUPABASE_URL'))); print('SUPABASE_SERVICE_KEY set:', bool(os.getenv('SUPABASE_SERVICE_KEY'))); print('SUPABASE_SECRET_KEY set:', bool(os.getenv('SUPABASE_SECRET_KEY'))); print('SUPABASE_KEY set:', bool(os.getenv('SUPABASE_KEY')))"
           python scripts_py/two_phase_newsletter.py --no-wait-for-interactions --delay-minutes 0
