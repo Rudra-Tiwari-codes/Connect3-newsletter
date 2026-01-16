@@ -19,7 +19,14 @@ from http.server import BaseHTTPRequestHandler
 from threading import Lock
 from urllib.parse import parse_qs, urlparse
 
-from supabase import create_client
+import sys
+from pathlib import Path
+
+# Add parent directory to path for python_app imports in Vercel serverless
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from python_app.supabase_client import supabase
+from python_app.categories import CONNECT3_CATEGORIES
 
 # Configure logging
 logging.basicConfig(
@@ -32,8 +39,6 @@ logger = logging.getLogger(__name__)
 # Configuration
 # =============================================================================
 
-SUPABASE_URL = os.environ.get("SUPABASE_URL")
-SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_KEY") or os.environ.get("SUPABASE_KEY")
 APP_URL = os.environ.get("NEXT_PUBLIC_APP_URL") or os.environ.get("NEXT_PUBLIC_SITE_URL") or "https://connect3.app"
 
 # Time decay: clicks older than this many days don't affect preferences
@@ -52,23 +57,9 @@ EVENT_ID_PATTERN = re.compile(r'^[a-zA-Z0-9_-]{1,64}$')
 CATEGORY_PATTERN = re.compile(r'^[a-z_]{1,50}$')
 ACTION_WHITELIST = {'like', 'dislike', 'click'}
 
-# Valid categories - matches CONNECT3_CATEGORIES from embeddings.py
-# Note: 'general' is a fallback for validation, not a real event category
-VALID_CATEGORIES = {
-    'academic_workshops', 'career_networking', 'social_cultural',
-    'sports_fitness', 'arts_music', 'tech_innovation',
-    'volunteering_community', 'food_dining', 'travel_adventure',
-    'health_wellness', 'entrepreneurship', 'environment_sustainability',
-    'gaming_esports',
-    'general',  # Fallback category for unclassified events
-}
-
-# Initialize Supabase client
-supabase = None
-if SUPABASE_URL and SUPABASE_KEY:
-    supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
-else:
-    logger.error("Supabase credentials not configured")
+# Valid categories - uses shared CONNECT3_CATEGORIES from categories.py
+# Note: 'general' is added as a fallback for validation
+VALID_CATEGORIES = set(CONNECT3_CATEGORIES) | {'general'}
 
 # =============================================================================
 # Rate Limiting (In-Memory for Serverless)

@@ -168,7 +168,8 @@ def embed_user(user_id: str, decay_half_life_days: float = 30.0) -> List[float]:
             created_at = datetime.fromisoformat(created_at_str.replace("Z", "+00:00"))
             days_old = (now - created_at).total_seconds() / 86400  # Convert to days
             time_decay = math.exp(-decay_lambda * days_old)
-          except Exception:
+          except Exception as e:
+            logger.warning(f"Failed to parse created_at timestamp: {created_at_str[:30] if created_at_str else 'None'}: {e}")
             pass  # Keep default decay of 1.0
         
         # Apply both base weight and time decay
