@@ -71,7 +71,7 @@ cp .env.example .env
 ┌─────────────────────────────────────────────────────────────┐
 │  PHASE 1: DISCOVERY                                         │
 │  - Send 9 random events to each user                        │
-│  - User clicks "Interested" / "Not interested" buttons      │
+│  - User clicks "Interested" button                          │
 │  - Feedback stored in interactions table                    │
 └─────────────────────────────────────────────────────────────┘
                               ↓

@@ -151,8 +151,8 @@ class TestGeneratePersonalizedEmail:
         assert "First event" in html
         assert "Second event" in html
 
-    def test_includes_like_dislike_buttons(self):
-        """Should include interested and not interested buttons."""
+    def test_includes_like_button_only(self):
+        """Should include interested button without a not interested option."""
         from python_app.email_templates import generate_personalized_email
         
         user = {"id": "user-123", "name": "User"}
@@ -161,9 +161,9 @@ class TestGeneratePersonalizedEmail:
         html = generate_personalized_email(user, events, "https://example.com/feedback")
         
         assert "Interested" in html
-        assert "Not interested" in html
         assert "action=like" in html
-        assert "action=dislike" in html
+        assert "Not interested" not in html
+        assert "action=dislike" not in html
 
     def test_tracking_urls_include_event_info(self):
         """Tracking URLs should include event ID and category."""
