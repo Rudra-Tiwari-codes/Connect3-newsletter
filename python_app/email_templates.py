@@ -53,6 +53,7 @@ def generate_personalized_email(user: Dict[str, Any], events: List[Dict[str, Any
   for i, evt in enumerate(events):
     # Escape user content for safety
     title = html.escape(evt.get('title', 'Event'))
+    description = html.escape(evt.get('description', ''))
     location = html.escape(evt.get('location', 'TBA'))
     media_url = evt.get('media_url')
 
@@ -124,6 +125,7 @@ def generate_personalized_email(user: Dict[str, Any], events: List[Dict[str, Any
             <a href="{like_url}" style="text-decoration:none; color:inherit; display:block;">
               {media_html}
               <h3 style="margin: 0 0 8px 0; color: #111827; font-size: 18px;">{title}</h3>
+              <p style="margin: 0 0 8px 0; color: #4b5563; font-size: 14px; line-height: 20px;">{description}</p>
               <p style="margin: 0 0 0 0; color: #6b7280; font-size: 13px; line-height: 18px;">
                 <span style="font-weight:600; font-size:13px; line-height:18px;">When:</span>
                 <span style="font-size:13px; line-height:18px;"> {when_str}</span><br>
