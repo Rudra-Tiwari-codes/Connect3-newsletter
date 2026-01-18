@@ -10,6 +10,8 @@ A personalized event recommendation and newsletter system developed for DSCubed 
 
 Connect3 delivers personalized university event newsletters using a two-phase recommendation approach. The system combines semantic embeddings with user interaction data to recommend relevant events based on individual preferences.
 
+For detailed system design, diagrams, and performance metrics, see [ARCHITECTURE.md](ARCHITECTURE.md).
+
 ### Key Capabilities
 
 - Event categorization using GPT-4o-mini
