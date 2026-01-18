@@ -60,7 +60,7 @@ class TestXSSPrevention:
     """Tests to prevent XSS attacks in email templates."""
 
     def test_user_name_xss_in_email(self):
-        """XSS in user name should be safely included."""
+        """XSS in user name should be safely escaped."""
         from python_app.email_templates import generate_personalized_email
         
         # XSS payload in user name
@@ -73,9 +73,10 @@ class TestXSSPrevention:
         
         html = generate_personalized_email(user, events, "https://example.com/feedback")
         
-        # The script tag should appear as text (escaped or raw), not execute
-        # Even if not escaped, this is an email client, not a browser
-        assert "<script>" in html  # Will be in the greeting - email clients ignore scripts
+        # The script tag should be HTML-escaped to prevent execution
+        # html.escape() converts <script> to &lt;script&gt;
+        assert "&lt;script&gt;" in html  # Properly escaped
+        assert "<script>alert" not in html  # Raw script tag should NOT be present
 
     def test_event_title_xss(self):
         """XSS in event title should not break email structure."""
