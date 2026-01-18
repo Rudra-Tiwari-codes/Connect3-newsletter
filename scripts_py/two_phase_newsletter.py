@@ -7,7 +7,6 @@ Phase 2: After 5 minutes, send preference-based newsletter (3-3-1-2 distribution
 Optimized: Uses batch category fetching to reduce DB calls from N to 1.
 """
 
-import json
 import random
 import sys
 import time
@@ -115,9 +114,14 @@ def get_category_for_event(event_id: str) -> str:
 
 
 def load_posts() -> List[Dict[str, Any]]:
-    """Load events from all_posts.json"""
-    with open("all_posts.json", "r", encoding="utf-8") as f:
-        return json.load(f)
+    """Load events from Supabase."""
+    resp = supabase.table("events").select("*").execute()
+    ensure_ok(resp, action="select events")
+    posts = resp.data or []
+    for post in posts:
+        if post.get("id") is not None:
+            post["id"] = str(post["id"])
+    return posts
 
 
 def is_new_recipient(user: Dict[str, Any]) -> bool:
@@ -150,24 +154,43 @@ def clear_user_interactions(user_id: str):
 
 def build_event_from_post(
     post: Dict[str, Any],
-    category: str,
+    category: Optional[str],
     *,
     is_exploration: bool = False,
 ) -> Dict[str, Any]:
     event_id = post.get("id")
+    caption = post.get("caption", "") or ""
+    title = (
+        post.get("title")
+        or caption[:80].split("\n")[0]
+        or "Event"
+    )
+    description = post.get("description") or caption[:200]
+    timestamp = post.get("timestamp") or post.get("event_date") or post.get("date") or post.get("created_at")
+    media_url = post.get("media_url") or post.get("image_url") or post.get("image")
+    permalink = post.get("permalink") or post.get("source_url") or post.get("url")
+    resolved_category = category or post.get("category") or "general"
     event = {
         "event_id": event_id,
         "id": event_id,
-        "title": post.get("caption", "")[:80].split("\n")[0] or "Event",
-        "description": post.get("caption", "")[:200],
-        "category": category,
-        "timestamp": post.get("timestamp"),
-        "media_url": post.get("media_url"),
-        "permalink": post.get("permalink"),
+        "title": title,
+        "description": description,
+        "category": resolved_category,
+        "timestamp": timestamp,
+        "media_url": media_url,
+        "permalink": permalink,
     }
     if is_exploration:
         event["is_exploration"] = True
     return event
+
+
+def _resolve_category(post: Dict[str, Any]) -> str:
+    post_category = post.get("category")
+    if post_category:
+        return post_category
+    event_id = post.get("id")
+    return get_category_for_event(event_id)
 
 
 def send_phase1_random_newsletter(user: Dict, posts: List[Dict]) -> List[str]:
@@ -179,7 +202,7 @@ def send_phase1_random_newsletter(user: Dict, posts: List[Dict]) -> List[str]:
     sent_ids = []
     for post in sample:
         event_id = post.get("id")
-        category = get_category_for_event(event_id)
+        category = _resolve_category(post)
 
         events.append(build_event_from_post(post, category))
         sent_ids.append(event_id)
@@ -250,7 +273,7 @@ def get_events_by_category(posts: List[Dict], category: str, exclude_ids: set, l
         if event_id in exclude_ids:
             continue
         
-        cat = get_category_for_event(event_id)
+        cat = _resolve_category(post)
         if cat == category:
             matching.append(build_event_from_post(post, cat))
             exclude_ids.add(event_id)
@@ -273,7 +296,7 @@ def get_exploration_events(posts: List[Dict], exclude_ids: set, preferred_catego
         if event_id in exclude_ids:
             continue
         
-        category = get_category_for_event(event_id)
+        category = _resolve_category(post)
         # Only include if NOT in user's preferred categories
         if category not in preferred_categories and category != "general":
             exploration_candidates.append((post, category))
@@ -283,7 +306,7 @@ def get_exploration_events(posts: List[Dict], exclude_ids: set, preferred_catego
         # Fallback: if no exploration events, just get any random events
         available = [p for p in posts if p.get("id") not in exclude_ids]
         selected = random.sample(available, min(limit, len(available)))
-        exploration_candidates = [(p, get_category_for_event(p.get("id"))) for p in selected]
+        exploration_candidates = [(p, _resolve_category(p)) for p in selected]
     else:
         exploration_candidates = random.sample(
             exploration_candidates, 
@@ -323,7 +346,7 @@ def top_up_events(posts: List[Dict], exclude_ids: set, limit: int) -> List[Dict]
     result = []
     for post in selected:
         event_id = post.get("id")
-        category = get_category_for_event(event_id)
+        category = _resolve_category(post)
         result.append(build_event_from_post(post, category))
         exclude_ids.add(event_id)
     return result
@@ -387,12 +410,13 @@ def run_two_phase_newsletter(delay_minutes: int = 5, wait_for_interactions: Opti
         wait_for_interactions = WAIT_FOR_INTERACTIONS_ENV
 
     posts = load_posts()
-    logger.info(f"Loaded {len(posts)} events from all_posts.json")
+    logger.info(f"Loaded {len(posts)} events from Supabase")
     
     # OPTIMIZATION: Batch-load all categories in a single DB query
     # This replaces N individual queries with 1 query
-    event_ids = [p.get("id") for p in posts if p.get("id")]
-    _category_cache.load_all(event_ids)
+    if any(not p.get("category") for p in posts):
+        event_ids = [p.get("id") for p in posts if p.get("id")]
+        _category_cache.load_all(event_ids)
     
     # Get users
     users_resp = supabase.table("users").select(

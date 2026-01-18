@@ -150,9 +150,20 @@ class TestGeneratePersonalizedEmail:
         assert "Event Two" in html
         assert "First event" in html
         assert "Second event" in html
+    
+    def test_includes_event_media_image(self):
+        """Should include event media image when available."""
+        from python_app.email_templates import generate_personalized_email
+        
+        user = {"id": "user-123", "name": "User"}
+        events = [{"id": "evt1", "title": "Test", "media_url": "https://example.com/image.jpg"}]
+        
+        html = generate_personalized_email(user, events, "https://example.com/feedback")
+        
+        assert 'src="https://example.com/image.jpg"' in html
 
-    def test_includes_like_button_only(self):
-        """Should include interested button without a not interested option."""
+    def test_includes_like_link_only(self):
+        """Should include a like tracking link without any button labels."""
         from python_app.email_templates import generate_personalized_email
         
         user = {"id": "user-123", "name": "User"}
@@ -160,7 +171,7 @@ class TestGeneratePersonalizedEmail:
         
         html = generate_personalized_email(user, events, "https://example.com/feedback")
         
-        assert "Interested" in html
+        assert "Interested" not in html
         assert "action=like" in html
         assert "Not interested" not in html
         assert "action=dislike" not in html

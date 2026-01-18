@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Dict, List, Mapping, Optional, Sequence
 
 from .embeddings import EMBEDDING_DIM, embed_user
@@ -59,22 +58,25 @@ class TwoTowerRecommender:
       logger.info("Using pgvector for similarity search")
     else:
       logger.info("Using in-memory NumPy for similarity search")
-    self._load_events_from_json()
+    # Event details are loaded lazily from Supabase when needed.
 
-  def _load_events_from_json(self) -> None:
-    """Load event details from all_posts.json into memory cache."""
-    json_path = Path(__file__).resolve().parents[1] / "all_posts.json"
-    if not json_path.exists():
-      logger.warning(f"{json_path} not found, event details will be limited")
+  def _load_events_from_supabase(self, event_ids: Sequence[str]) -> None:
+    """Load event details from Supabase into the local cache."""
+    missing_ids = [event_id for event_id in event_ids if event_id and event_id not in self._events_cache]
+    if not missing_ids:
       return
-    try:
-      with open(json_path, 'r', encoding='utf-8') as f:
-        posts = json.load(f)
-      for post in posts:
-        self._events_cache[post['id']] = post
-      logger.info(f"Loaded {len(self._events_cache)} events from all_posts.json")
-    except Exception as e:
-      logger.error(f"Failed to load all_posts.json: {e}")
+
+    batch_size = 200
+    for start in range(0, len(missing_ids), batch_size):
+      batch = missing_ids[start:start + batch_size]
+      resp = supabase.table("events").select("*").in_("id", batch).execute()
+      ensure_ok(resp, action="select events")
+      rows = resp.data or []
+      for row in rows:
+        row_id = row.get("id") or row.get("event_id")
+        if row_id is None:
+          continue
+        self._events_cache[str(row_id)] = row
 
   def load_event_index(self) -> int:
     """Load all event embeddings from Supabase into the in-memory index."""
@@ -134,15 +136,20 @@ class TwoTowerRecommender:
     if not candidates:
       return []
 
-    candidate_ids = [c.get("id") for c in candidates if c.get("id")]
+    candidate_ids = [str(c.get("id")) for c in candidates if c.get("id")]
+    candidate_meta_by_id = {
+      str(c.get("id")): c.get("metadata") for c in candidates if c.get("id")
+    }
     
-    # Use events from JSON cache instead of database
+    # Load event details from Supabase as needed.
+    self._load_events_from_supabase(candidate_ids)
+
     event_map: Dict[str, Dict[str, object]] = {}
     for cid in candidate_ids:
       if cid in self._events_cache:
         event = dict(self._events_cache[cid])
         # Add category from candidate metadata
-        candidate_meta = next((c.get("metadata") for c in candidates if c.get("id") == cid), {})
+        candidate_meta = candidate_meta_by_id.get(cid, {})
         if candidate_meta and candidate_meta.get("category"):
           event["category"] = candidate_meta["category"]
         event_map[cid] = event
@@ -173,12 +180,17 @@ class TwoTowerRecommender:
     category_counts: Dict[str, int] = {}
 
     for candidate in candidates:
-      event_id = candidate["id"]
+      event_id = str(candidate["id"])
       event = events.get(event_id)
       if not event:
         continue
 
-      event_date = _parse_date(event.get("event_date") or event.get("timestamp") or event.get("created_at"))
+      event_date = _parse_date(
+        event.get("event_date")
+        or event.get("timestamp")
+        or event.get("date")
+        or event.get("created_at")
+      )
       if not event_date:
         continue
       days_old = abs((event_date - now).days)
@@ -200,9 +212,9 @@ class TwoTowerRecommender:
         "event_id": event_id,
         "title": event.get("title") or self._extract_title(event.get("caption") or event.get("description") or ""),
         "caption": event.get("caption") or event.get("description") or "",
-        "timestamp": event.get("timestamp") or event.get("event_date"),
-        "permalink": event.get("permalink") or event.get("source_url"),
-        "media_url": event.get("media_url") or "",
+        "timestamp": event.get("timestamp") or event.get("event_date") or event.get("date"),
+        "permalink": event.get("permalink") or event.get("source_url") or event.get("url"),
+        "media_url": event.get("media_url") or event.get("image_url") or event.get("image") or "",
         "category": event.get("category"),
         "similarity_score": candidate["score"],
         "recency_score": recency_score,

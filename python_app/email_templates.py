@@ -53,8 +53,16 @@ def generate_personalized_email(user: Dict[str, Any], events: List[Dict[str, Any
   for i, evt in enumerate(events):
     # Escape user content for safety
     title = html.escape(evt.get('title', 'Event'))
-    description = html.escape(evt.get('description', ''))
     location = html.escape(evt.get('location', 'TBA'))
+    media_url = evt.get('media_url')
+    media_html = ""
+    if media_url:
+      media_html = (
+        f'<img src="{html.escape(media_url, quote=True)}" '
+        f'alt="{title}" '
+        'style="width:100%; max-width:100%; height:auto; aspect-ratio:1/1; object-fit:cover; '
+        'border-radius: 8px; display:block; margin-bottom: 10px; border:0; outline:none; text-decoration:none;" />'
+      )
     
     when = evt.get("event_date") or evt.get("timestamp")
     when_str = ""
@@ -76,26 +84,27 @@ def generate_personalized_email(user: Dict[str, Any], events: List[Dict[str, Any
     
     cards.append(
       f"""
-      <div style="background: #F8F6FF; border-radius: 10px; padding: 16px; margin-bottom: 16px; border: 1px solid #DFCAFB; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-        <!-- event-{event_id}-{i} -->
-        <h3 style="margin: 0 0 8px 0; color: #111827; font-size: 18px;">{title}</h3>
-        <p style="margin: 0 0 8px 0; color: #4b5563; font-size: 14px;">{description}</p>
-        <p style="margin: 0 0 12px 0; color: #6b7280; font-size: 13px;">
-          <strong>When:</strong> {when_str}<br>
-          <strong>Where:</strong> {location}<br>
-          <strong>Category:</strong> {format_category(evt.get('category'))}
-        </p>
-        <div style="margin-top: 10px;">
-          <!--[if mso]>
-          <table role="presentation" cellspacing="0" cellpadding="0"><tr>
-          <td>
-          <![endif]-->
-          <a href="{like_url}" style="background: #854ECB; color: white; padding: 10px 16px; text-decoration: none; border-radius: 100px; display: inline-block; font-size: 14px;">Interested</a>
-          <!--[if mso]>
-          </td></tr></table>
-          <![endif]-->
-        </div>
-      </div>
+      <table role="presentation" class="card-table" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate; border-spacing:0; width:100%;">
+        <tr>
+          <td class="card" style="padding:16px; background:#F8F6FF; border:1px solid #DFCAFB; border-radius:12px; overflow:hidden; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+            <!-- event-{event_id}-{i} -->
+            <a href="{like_url}" style="text-decoration:none; color:inherit; display:block;">
+              {media_html}
+              <h3 style="margin: 0 0 8px 0; color: #111827; font-size: 18px;">{title}</h3>
+              <p style="margin: 0 0 0 0; color: #6b7280; font-size: 13px;">
+                <strong>When:</strong> {when_str}<br>
+                <strong>Where:</strong> {location}<br>
+                <strong>Category:</strong> {format_category(evt.get('category'))}
+              </p>
+            </a>
+          </td>
+        </tr>
+      </table>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td height="16" style="line-height:16px; font-size:0;">&nbsp;</td>
+        </tr>
+      </table>
       """
     )
 
@@ -107,9 +116,30 @@ def generate_personalized_email(user: Dict[str, Any], events: List[Dict[str, Any
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
+    body, table, td, a {{
+      -webkit-text-size-adjust: 100%;
+      -ms-text-size-adjust: 100%;
+    }}
+    table {{
+      border-collapse: collapse;
+    }}
+    .card-table {{
+      border-collapse: separate !important;
+      border-spacing: 0 !important;
+    }}
+    img {{
+      border: 0;
+      height: auto;
+      line-height: 100%;
+      outline: none;
+      text-decoration: none;
+      -ms-interpolation-mode: bicubic;
+    }}
     @media only screen and (max-width: 600px) {{
       .container {{
         width: 100% !important;
+      }}
+      .content {{
         padding: 12px !important;
       }}
       .header {{
@@ -123,7 +153,6 @@ def generate_personalized_email(user: Dict[str, Any], events: List[Dict[str, Any
       }}
       .card {{
         padding: 12px !important;
-        margin-bottom: 12px !important;
       }}
       .card h3 {{
         font-size: 16px !important;
@@ -133,33 +162,48 @@ def generate_personalized_email(user: Dict[str, Any], events: List[Dict[str, Any
         width: 100% !important;
         margin: 8px 0 !important;
         text-align: center !important;
+        box-sizing: border-box !important;
       }}
     }}
   </style>
 </head>
-<body style="margin:0; padding:0; background:#ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-  <div style="display:none;max-height:0;overflow:hidden;">
+<body style="margin:0; padding:0; background:#ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; width:100%;">
+  <div style="display:none; font-size:1px; line-height:1px; max-height:0; max-width:0; opacity:0; overflow:hidden;">
     {len(events)} curated events just for you this week
   </div>
-  <div class="container" style="max-width:640px; margin:0 auto; background:#fff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-    <div style="padding:24px;">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
-        <tr>
-          <td class="header" background="{banner_url}" bgcolor="#111827" style="background:#111827 url('{banner_url}') center/cover no-repeat; color:#fff; padding:24px; text-align:center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-            <h1 style="margin:0; color:#FFFFFF; font-weight:700; font-size: 28px;">Your Weekly Event Picks</h1>
-            <p style="margin:8px 0 0 0; color:#FFFFFF; font-size: 16px;">Hi {html.escape(user.get('name') or user.get('email') or 'there')}! Here are {len(events)} events picked for you.</p>
-          </td>
-        </tr>
-      </table>
-      <div style="margin-top:24px;">
-        {''.join(cards)}
-      </div>
-    </div>
-    <div style="background:#f9fafb; padding:16px; text-align:center; color:#6b7280; font-size:12px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-      <p style="margin:0;">Connect3 Newsletter</p>
-      {unsubscribe_html}
-    </div>
-  </div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;">
+    <tr>
+      <td align="center">
+        <table role="presentation" class="container" width="100%" cellpadding="0" cellspacing="0" style="max-width:640px; width:100%; margin:0 auto; background:#fff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+          <tr>
+            <td class="content" style="padding:24px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+                <tr>
+                  <td class="header" background="{banner_url}" bgcolor="#111827" style="background:#111827 url('{banner_url}') center/cover no-repeat; color:#fff; padding:24px; text-align:center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+                    <h1 style="margin:0; color:#FFFFFF; font-weight:700; font-size: 28px;">Your Weekly Event Picks</h1>
+                    <p style="margin:8px 0 0 0; color:#FFFFFF; font-size: 16px;">Hi {html.escape(user.get('name') or user.get('email') or 'there')}! Here are {len(events)} events picked for you.</p>
+                  </td>
+                </tr>
+              </table>
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="padding-top:24px;">
+                    {''.join(cards)}
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td style="background:#f9fafb; padding:16px; text-align:center; color:#6b7280; font-size:12px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+              <p style="margin:0;">Connect3 Newsletter</p>
+              {unsubscribe_html}
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
 </body>
 </html>
   """
