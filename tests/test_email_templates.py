@@ -162,6 +162,29 @@ class TestGeneratePersonalizedEmail:
         
         assert 'src="https://example.com/image.jpg"' in html
 
+    def test_includes_group_header_action(self):
+        """Should include a group header action link when configured."""
+        from python_app.email_templates import generate_personalized_email
+
+        user = {"id": "user-123", "name": "User"}
+        events = [
+            {
+                "id": "evt1",
+                "title": "Test",
+                "category": "tech_innovation",
+                "group_title": "Tech Innovation",
+                "group_action_label": "Not interested",
+                "group_action_event_id": "evt1",
+                "group_action_category": "tech_innovation",
+            }
+        ]
+
+        html = generate_personalized_email(user, events, "https://example.com/feedback")
+
+        assert "Tech Innovation" in html
+        assert "Not interested" in html
+        assert "action=dislike" in html
+
     def test_includes_like_link_only(self):
         """Should include a like tracking link without any button labels."""
         from python_app.email_templates import generate_personalized_email

@@ -18,7 +18,7 @@ from typing import Dict, List, Any, Optional
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from python_app.email_sender import send_email
-from python_app.email_templates import generate_personalized_email
+from python_app.email_templates import generate_personalized_email, format_category
 from python_app.logger import get_logger, setup_logging
 from python_app.supabase_client import supabase, ensure_ok
 from python_app.config import get_env
@@ -30,6 +30,14 @@ SITE_URL = get_env("NEXT_PUBLIC_SITE_URL") or get_env("NEXT_PUBLIC_APP_URL") or 
 FEEDBACK_BASE_URL = f"{SITE_URL.rstrip('/')}/feedback"
 DEFAULT_PHASE2_TOTAL = 9
 WAIT_FOR_INTERACTIONS_ENV = False
+
+CATEGORY_COLUMNS = [
+    "tech_innovation", "career_networking", "academic_workshops",
+    "social_cultural", "entrepreneurship", "sports_fitness",
+    "arts_music", "volunteering_community", "food_dining",
+    "travel_adventure", "health_wellness", "environment_sustainability",
+    "gaming_esports"
+]
 
 
 def log_email_sent(user_id: str, events_sent: List[str], status: str = "sent", error_message: str = None) -> None:
@@ -113,6 +121,34 @@ def get_category_for_event(event_id: str) -> str:
     return _category_cache.get(event_id)
 
 
+def log_probability_distribution(user_id: str) -> None:
+    """Log user preference distribution as a simple bar chart."""
+    try:
+        resp = (
+            supabase.table("user_preferences")
+            .select("*")
+            .eq("user_id", user_id)
+            .limit(1)
+            .execute()
+        )
+        ensure_ok(resp, action="select user_preferences")
+        if not resp.data:
+            logger.info(f"No preference distribution for user {user_id[:8]}...")
+            return
+        prefs = resp.data[0]
+        logger.info(f"Printing probability distribution for user {user_id[:8]}...")
+        bar_scale = 20
+        for cat in CATEGORY_COLUMNS:
+            try:
+                score = float(prefs.get(cat, 0.0))
+            except (TypeError, ValueError):
+                score = 0.0
+            bar = "#" * max(0, int(round(score * bar_scale)))
+            logger.info(f"{cat.ljust(24)} {bar}")
+    except Exception as exc:
+        logger.warning(f"Failed to print probability distribution for user {user_id[:8]}...: {exc}")
+
+
 def load_posts() -> List[Dict[str, Any]]:
     """Load events from Supabase."""
     resp = supabase.table("events").select("*").execute()
@@ -185,6 +221,23 @@ def build_event_from_post(
     return event
 
 
+def _annotate_group_header(
+    events: List[Dict[str, Any]],
+    title: str,
+    *,
+    action_label: Optional[str] = None,
+    action_category: Optional[str] = None,
+) -> None:
+    if not events:
+        return
+    events[0]["group_title"] = title
+    if action_label and action_category:
+        event_id = events[0].get("event_id") or events[0].get("id")
+        events[0]["group_action_label"] = action_label
+        events[0]["group_action_event_id"] = event_id
+        events[0]["group_action_category"] = action_category
+
+
 def _resolve_category(post: Dict[str, Any]) -> str:
     post_category = post.get("category")
     if post_category:
@@ -208,6 +261,7 @@ def send_phase1_random_newsletter(user: Dict, posts: List[Dict]) -> List[str]:
         sent_ids.append(event_id)
     
     # Generate and send email
+    log_probability_distribution(user["id"])
     html = generate_personalized_email(user, events, FEEDBACK_BASE_URL)
     subject = f"Phase 1: Discover 9 Events - Tell Us What You Like!"
     
@@ -228,15 +282,6 @@ def get_user_preferred_categories(user_id: str) -> List[str]:
     Uses the stored preference scores (updated by clicks via feedback.py)
     instead of counting raw interactions. This provides proper personalization.
     """
-    # Category columns in user_preferences table
-    CATEGORY_COLUMNS = [
-        "tech_innovation", "career_networking", "academic_workshops",
-        "social_cultural", "entrepreneurship", "sports_fitness",
-        "arts_music", "volunteering_community", "food_dining",
-        "travel_adventure", "health_wellness", "environment_sustainability",
-        "gaming_esports"
-    ]
-    
     # Fetch user's preference scores from user_preferences table
     resp = supabase.table("user_preferences").select("*").eq("user_id", user_id).limit(1).execute()
     
@@ -362,36 +407,49 @@ def send_phase2_preference_newsletter(user: Dict, posts: List[Dict], phase1_ids:
     store_user_top_categories(user_id, categories)
     
     exclude_ids = set(phase1_ids)  # Don't repeat Phase 1 events
-    selected_events = []
-    
     # 3 from category 1
     cat1_events = get_events_by_category(posts, categories[0], exclude_ids, 3)
-    selected_events.extend(cat1_events)
     logger.debug(f"{len(cat1_events)} from {categories[0]}")
     
     # 3 from category 2
     cat2_events = get_events_by_category(posts, categories[1], exclude_ids, 3)
-    selected_events.extend(cat2_events)
     logger.debug(f"{len(cat2_events)} from {categories[1]}")
     
     # 1 from category 3
     cat3_events = get_events_by_category(posts, categories[2], exclude_ids, 1)
-    selected_events.extend(cat3_events)
     logger.debug(f"{len(cat3_events)} from {categories[2]}")
     
     # 2 exploration events from NON-preferred categories
     exploration_events = get_exploration_events(posts, exclude_ids, categories, 2)
-    selected_events.extend(exploration_events)
     exploration_cats = [e.get('category', 'unknown') for e in exploration_events]
     logger.debug(f"{len(exploration_events)} exploration from: {exploration_cats}")
 
-    if len(selected_events) < DEFAULT_PHASE2_TOTAL:
-        remaining = DEFAULT_PHASE2_TOTAL - len(selected_events)
+    top_ups: List[Dict[str, Any]] = []
+    current_count = len(cat1_events) + len(cat2_events) + len(cat3_events) + len(exploration_events)
+    if current_count < DEFAULT_PHASE2_TOTAL:
+        remaining = DEFAULT_PHASE2_TOTAL - current_count
         top_ups = top_up_events(posts, exclude_ids, remaining)
-        selected_events.extend(top_ups)
         logger.debug(f"{len(top_ups)} top-up events to reach {DEFAULT_PHASE2_TOTAL}")
-    
+
+    _annotate_group_header(
+        cat1_events,
+        format_category(categories[0]),
+        action_label="Not interested",
+        action_category=categories[0],
+    )
+    _annotate_group_header(
+        cat2_events,
+        format_category(categories[1]),
+        action_label="Not interested",
+        action_category=categories[1],
+    )
+    remainder = cat3_events + exploration_events + top_ups
+    _annotate_group_header(remainder, "Some more events")
+
+    selected_events = cat1_events + cat2_events + remainder
+
     # Send email
+    log_probability_distribution(user_id)
     html = generate_personalized_email(user, selected_events, FEEDBACK_BASE_URL)
     subject = f"Phase 2: {len(selected_events)} Events Curated Just For You!"
     

@@ -55,6 +55,7 @@ def generate_personalized_email(user: Dict[str, Any], events: List[Dict[str, Any
     title = html.escape(evt.get('title', 'Event'))
     location = html.escape(evt.get('location', 'TBA'))
     media_url = evt.get('media_url')
+
     media_html = ""
     if media_url:
       media_html = (
@@ -80,10 +81,42 @@ def generate_personalized_email(user: Dict[str, Any], events: List[Dict[str, Any
     # Include sent timestamp for 15-day time decay enforcement
     sent_param = quote(email_sent_at)
     like_url = f"{tracking_base}/feedback?uid={user_id}&eid={event_id}&cat={category}&action=like&sent={sent_param}"
-    
+
+    group_title = evt.get("group_title")
+    group_action_label = evt.get("group_action_label")
+    group_action_event_id = evt.get("group_action_event_id") or event_id
+    group_action_category = evt.get("group_action_category") or category
+    group_header_html = ""
+    if group_title:
+      action_html = ""
+      if group_action_label:
+        dislike_url = (
+          f"{tracking_base}/feedback?uid={user_id}&eid={group_action_event_id}"
+          f"&cat={group_action_category}&action=dislike&sent={sent_param}"
+        )
+        action_html = (
+          f'<a href="{dislike_url}" '
+          'style="font-size:12px; color:#111111; background:#DFCAFB; '
+          'padding:4px 10px; border-radius:999px; text-decoration:none; display:inline-block;">'
+          f'{html.escape(str(group_action_label))}'
+          '</a>'
+        )
+      group_header_html = f"""
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+        <tr>
+          <td style="padding:0 0 8px 0; font-size:16px; font-weight:600; color:#111827;">
+            {html.escape(str(group_title))}
+          </td>
+          <td align="right" style="padding:0 0 8px 0;">
+            {action_html}
+          </td>
+        </tr>
+      </table>
+      """
     
     cards.append(
       f"""
+      {group_header_html}
       <table role="presentation" class="card-table" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate; border-spacing:0; width:100%;">
         <tr>
           <td class="card" style="padding:16px; background:#F8F6FF; border:1px solid #DFCAFB; border-radius:12px; overflow:hidden; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
@@ -91,10 +124,13 @@ def generate_personalized_email(user: Dict[str, Any], events: List[Dict[str, Any
             <a href="{like_url}" style="text-decoration:none; color:inherit; display:block;">
               {media_html}
               <h3 style="margin: 0 0 8px 0; color: #111827; font-size: 18px;">{title}</h3>
-              <p style="margin: 0 0 0 0; color: #6b7280; font-size: 13px;">
-                <strong>When:</strong> {when_str}<br>
-                <strong>Where:</strong> {location}<br>
-                <strong>Category:</strong> {format_category(evt.get('category'))}
+              <p style="margin: 0 0 0 0; color: #6b7280; font-size: 13px; line-height: 18px;">
+                <span style="font-weight:600; font-size:13px; line-height:18px;">When:</span>
+                <span style="font-size:13px; line-height:18px;"> {when_str}</span><br>
+                <span style="font-weight:600; font-size:13px; line-height:18px;">Where:</span>
+                <span style="font-size:13px; line-height:18px;"> {location}</span><br>
+                <span style="font-weight:600; font-size:13px; line-height:18px;">Category:</span>
+                <span style="font-size:13px; line-height:18px;"> {format_category(evt.get('category'))}</span>
               </p>
             </a>
           </td>
