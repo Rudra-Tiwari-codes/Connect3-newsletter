@@ -1,8 +1,8 @@
-# Connect3 Architecture Documentation
+# Connect3 Newsletter - Architecture Documentation
 
 ## System Overview
 
-Connect3 is a personalized event recommendation and newsletter system. It uses a two-tower recommendation architecture with semantic embeddings to deliver relevant university events to subscribers.
+The Connect3 Newsletter is a personalized event recommendation and delivery system, part of the broader Connect3 platform. It uses a two-tower recommendation architecture with semantic embeddings to deliver relevant university events to subscribers.
 
 ## Architecture Diagram
 
