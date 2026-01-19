@@ -1,4 +1,4 @@
-"""Script to populate the events table from all_posts.json"""
+"""Script to populate the events table from post JSON."""
 import json
 import sys
 from pathlib import Path
@@ -8,10 +8,16 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from python_app.supabase_client import supabase, ensure_ok
 
-def main():
+ROOT_DIR = Path(__file__).resolve().parents[1]
+DEFAULT_POSTS_PATH = ROOT_DIR / "all_posts_simulated.json"
+
+
+def main(posts_path: Path = None) -> None:
     # Load posts
-    with open('all_posts.json', 'r', encoding='utf-8') as f:
+    posts_path = posts_path or DEFAULT_POSTS_PATH
+    with posts_path.open('r', encoding='utf-8') as f:
         posts = json.load(f)
+    print(f"Loading posts from {posts_path}")
     print(f"Found {len(posts)} posts to insert into events table")
     
     # Get categories from embeddings
@@ -26,12 +32,13 @@ def main():
     events = []
     for post in posts:
         caption = post.get('caption', '') or ''
+        event_id = str(post['id'])
         event = {
-            'id': str(post['id']),
+            'id': event_id,
             'title': caption[:80].split('\n')[0] if caption else 'Event',
             'description': caption[:500] if caption else '',
-            'date': post.get('timestamp'),
-            'category': cat_map.get(str(post['id'])),
+            'date': post.get('event_date') or post.get('timestamp'),
+            'category': cat_map.get(event_id) or post.get('category'),
             'image_url': post.get('media_url'),
         }
         events.append(event)
@@ -66,4 +73,9 @@ def main():
     print(f"Total events in table: {check.count}")
 
 if __name__ == "__main__":
-    main()
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--posts", type=Path, default=DEFAULT_POSTS_PATH, help="Path to posts JSON")
+    args = parser.parse_args()
+    main(posts_path=args.posts)

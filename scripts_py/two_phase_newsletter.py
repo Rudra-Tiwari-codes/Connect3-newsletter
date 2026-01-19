@@ -29,6 +29,7 @@ logger = get_logger(__name__)
 SITE_URL = get_env("NEXT_PUBLIC_SITE_URL") or get_env("NEXT_PUBLIC_APP_URL") or "https://connect3-newsletter.vercel.app"
 FEEDBACK_BASE_URL = f"{SITE_URL.rstrip('/')}/feedback"
 DEFAULT_PHASE2_TOTAL = 9
+MAX_EVENT_LOOKAHEAD_DAYS = 30
 WAIT_FOR_INTERACTIONS_ENV = False
 
 CATEGORY_COLUMNS = [
@@ -149,15 +150,47 @@ def log_probability_distribution(user_id: str) -> None:
         logger.warning(f"Failed to print probability distribution for user {user_id[:8]}...: {exc}")
 
 
+def _parse_event_datetime(value: Optional[str]) -> Optional[datetime]:
+    if not value:
+        return None
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except Exception:
+        return None
+    if parsed.tzinfo is None:
+        return parsed.replace(tzinfo=timezone.utc)
+    return parsed
+
+
+def _event_datetime_from_post(post: Dict[str, Any]) -> Optional[datetime]:
+    for key in ("event_date", "timestamp", "date", "created_at"):
+        parsed = _parse_event_datetime(post.get(key))
+        if parsed:
+            return parsed
+    return None
+
+
+def _is_event_within_window(post: Dict[str, Any], now: datetime, max_days: int) -> bool:
+    event_dt = _event_datetime_from_post(post)
+    if not event_dt:
+        return False
+    delta_days = (event_dt - now).total_seconds() / 86400
+    return 0 <= delta_days <= max_days
+
+
 def load_posts() -> List[Dict[str, Any]]:
     """Load events from Supabase."""
     resp = supabase.table("events").select("*").execute()
     ensure_ok(resp, action="select events")
     posts = resp.data or []
+    now = datetime.now(timezone.utc)
+    filtered: List[Dict[str, Any]] = []
     for post in posts:
         if post.get("id") is not None:
             post["id"] = str(post["id"])
-    return posts
+        if _is_event_within_window(post, now, MAX_EVENT_LOOKAHEAD_DAYS):
+            filtered.append(post)
+    return filtered
 
 
 def is_new_recipient(user: Dict[str, Any]) -> bool:
@@ -277,7 +310,7 @@ def send_phase1_random_newsletter(user: Dict, posts: List[Dict]) -> List[str]:
 
 def get_user_preferred_categories(user_id: str) -> List[str]:
     """
-    Get user's top 3 preferred categories based on user_preferences scores.
+    Get user's top 2 preferred categories based on user_preferences scores.
     
     Uses the stored preference scores (updated by clicks via feedback.py)
     instead of counting raw interactions. This provides proper personalization.
@@ -293,26 +326,26 @@ def get_user_preferred_categories(user_id: str) -> List[str]:
             score = prefs.get(cat, 0.077)  # Default uniform baseline
             category_scores.append((cat, score))
         
-        # Sort by score descending and get top 3
+        # Sort by score descending and get top 2
         category_scores.sort(key=lambda x: x[1], reverse=True)
-        top_cats = [cat for cat, score in category_scores[:3] if score > 0]
+        top_cats = [cat for cat, score in category_scores[:2] if score > 0]
         
         # Log for debugging
         logger.info(f"User {user_id[:8]}... preference scores: {category_scores[:5]}")
         
-        if len(top_cats) >= 3:
-            return top_cats[:3]
+        if len(top_cats) >= 2:
+            return top_cats[:2]
     else:
         logger.warning(f"No user_preferences found for user {user_id}, using defaults")
     
     # Fallback to defaults if no preferences or not enough data
-    defaults = ["tech_innovation", "career_networking", "academic_workshops"]
-    return defaults[:3]
+    defaults = ["tech_innovation", "career_networking"]
+    return defaults[:2]
 
 
 def get_events_by_category(posts: List[Dict], category: str, exclude_ids: set, limit: int) -> List[Dict]:
     """Get events matching a specific category"""
-    matching = []
+    candidates = []
     for post in posts:
         event_id = post.get("id")
         if event_id in exclude_ids:
@@ -320,13 +353,19 @@ def get_events_by_category(posts: List[Dict], category: str, exclude_ids: set, l
         
         cat = _resolve_category(post)
         if cat == category:
-            matching.append(build_event_from_post(post, cat))
-            exclude_ids.add(event_id)
-            
-            if len(matching) >= limit:
-                break
-    
-    return matching
+            candidates.append(post)
+
+    if not candidates or limit <= 0:
+        return []
+
+    selected = random.sample(candidates, min(limit, len(candidates)))
+    result = []
+    for post in selected:
+        event_id = post.get("id")
+        event = build_event_from_post(post, category)
+        exclude_ids.add(event_id)
+        result.append(event)
+    return result
 
 
 def get_exploration_events(posts: List[Dict], exclude_ids: set, preferred_categories: List[str], limit: int) -> List[Dict]:
@@ -398,7 +437,7 @@ def top_up_events(posts: List[Dict], exclude_ids: set, limit: int) -> List[Dict]
 
 
 def send_phase2_preference_newsletter(user: Dict, posts: List[Dict], phase1_ids: List[str]):
-    """Phase 2: Send preference-based newsletter (3-3-1-2 distribution)"""
+    """Phase 2: Send preference-based newsletter with top-2 + random diversity mix."""
     user_id = user["id"]
     categories = get_user_preferred_categories(user_id)
     logger.info(f"User's preferred categories: {categories}")
@@ -407,46 +446,35 @@ def send_phase2_preference_newsletter(user: Dict, posts: List[Dict], phase1_ids:
     store_user_top_categories(user_id, categories)
     
     exclude_ids = set(phase1_ids)  # Don't repeat Phase 1 events
-    # 3 from category 1
+    # Up to 3 from category 1
     cat1_events = get_events_by_category(posts, categories[0], exclude_ids, 3)
     logger.debug(f"{len(cat1_events)} from {categories[0]}")
     
-    # 3 from category 2
+    # Up to 3 from category 2
     cat2_events = get_events_by_category(posts, categories[1], exclude_ids, 3)
     logger.debug(f"{len(cat2_events)} from {categories[1]}")
     
-    # 1 from category 3
-    cat3_events = get_events_by_category(posts, categories[2], exclude_ids, 1)
-    logger.debug(f"{len(cat3_events)} from {categories[2]}")
-    
-    # 2 exploration events from NON-preferred categories
-    exploration_events = get_exploration_events(posts, exclude_ids, categories, 2)
+    # Fill remaining slots with random valid events for diversity
+    remaining = DEFAULT_PHASE2_TOTAL - (len(cat1_events) + len(cat2_events))
+    exploration_events = get_exploration_events(posts, exclude_ids, categories, remaining)
     exploration_cats = [e.get('category', 'unknown') for e in exploration_events]
     logger.debug(f"{len(exploration_events)} exploration from: {exploration_cats}")
-
-    top_ups: List[Dict[str, Any]] = []
-    current_count = len(cat1_events) + len(cat2_events) + len(cat3_events) + len(exploration_events)
-    if current_count < DEFAULT_PHASE2_TOTAL:
-        remaining = DEFAULT_PHASE2_TOTAL - current_count
-        top_ups = top_up_events(posts, exclude_ids, remaining)
-        logger.debug(f"{len(top_ups)} top-up events to reach {DEFAULT_PHASE2_TOTAL}")
 
     _annotate_group_header(
         cat1_events,
         format_category(categories[0]),
-        action_label="Not interested",
+        action_label="See less of this category",
         action_category=categories[0],
     )
     _annotate_group_header(
         cat2_events,
         format_category(categories[1]),
-        action_label="Not interested",
+        action_label="See less of this category",
         action_category=categories[1],
     )
-    remainder = cat3_events + exploration_events + top_ups
-    _annotate_group_header(remainder, "Some more events")
+    _annotate_group_header(exploration_events, "Some more events")
 
-    selected_events = cat1_events + cat2_events + remainder
+    selected_events = cat1_events + cat2_events + exploration_events
 
     # Send email
     log_probability_distribution(user_id)

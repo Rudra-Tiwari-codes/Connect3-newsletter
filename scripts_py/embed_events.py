@@ -1,4 +1,4 @@
-"""Embed and classify events from all_posts.json, then upsert embeddings to Supabase."""
+"""Embed and classify events from a posts JSON file, then upsert embeddings to Supabase."""
 
 import json
 import sys
@@ -13,7 +13,7 @@ from python_app.embeddings import embed_event
 from python_app.supabase_client import ensure_ok, supabase
 
 
-POSTS_PATH = Path(__file__).resolve().parents[1] / "all_posts.json"
+DEFAULT_POSTS_PATH = Path(__file__).resolve().parents[1] / "all_posts.json"
 
 
 def upsert_embedding(record: Dict[str, Any]) -> None:
@@ -47,13 +47,14 @@ def print_category_distribution() -> None:
     print(f"  {category.ljust(20)} {str(count).rjust(3)} {bar}")
 
 
-def main(start_batch: int = 1) -> None:
-  if not POSTS_PATH.exists():
-    raise SystemExit(f"all_posts.json not found at {POSTS_PATH}")
+def main(start_batch: int = 1, posts_path: Path = DEFAULT_POSTS_PATH) -> None:
+  if not posts_path.exists():
+    raise SystemExit(f"posts JSON not found at {posts_path}")
 
   print("Starting event embedding process...\n")
-  posts = json.loads(POSTS_PATH.read_text(encoding='utf-8'))
+  posts = json.loads(posts_path.read_text(encoding='utf-8'))
   total = len(posts)
+  print(f"Loading posts from {posts_path}")
   print(f"Found {total} posts to process\n")
 
   success = 0
@@ -93,5 +94,6 @@ if __name__ == "__main__":
   import argparse
   parser = argparse.ArgumentParser()
   parser.add_argument("--start-batch", type=int, default=1, help="Batch number to start from (1-indexed)")
+  parser.add_argument("--posts", type=Path, default=DEFAULT_POSTS_PATH, help="Path to posts JSON")
   args = parser.parse_args()
-  main(start_batch=args.start_batch)
+  main(start_batch=args.start_batch, posts_path=args.posts)

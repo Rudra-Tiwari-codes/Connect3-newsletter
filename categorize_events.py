@@ -38,6 +38,31 @@ CATEGORIES = [
     "gaming_esports",
 ]
 
+class EventClassifier:
+    def __init__(self):
+        self.categories = CATEGORIES
+
+    def classify_event(self, title, description):
+        new_category = get_category_from_openai(title, description)
+
+        if not new_category or new_category not in self.categories:
+            new_category = get_category_from_gemini(title, description)
+
+        if new_category in self.categories:
+            return new_category
+
+        return None
+
+    def classify_batch(self, events):
+        classifications = {}
+        for event in events:
+            title = event.get("title") or ""
+            description = event.get("description") or ""
+            category = self.classify_event(title, description)
+            if category:
+                classifications[event["id"]] = category
+        return classifications
+
 def get_category_from_openai(title, description):
     """Try to get category using OpenAI."""
     prompt = f"Classify the following event into EXACTLY one of these categories: {', '.join(CATEGORIES)}.\n\nEvent Title: {title}\nDescription: {description[:500]}\n\nReturn only the category name."
@@ -81,17 +106,14 @@ def categorize_events():
 
     print(f"Found {len(events)} events to categorize...")
 
-    for event in events:
-        # Try OpenAI first, then Gemini
-        new_category = get_category_from_openai(event['title'], event['description'])
-        
-        if not new_category or new_category not in CATEGORIES:
-            print(f"🔄 Retrying with Gemini for '{event['title']}'...")
-            new_category = get_category_from_gemini(event['title'], event['description'])
+    classifier = EventClassifier()
+    classifications = classifier.classify_batch(events)
 
-        # 2. Update the event in Supabase
-        if new_category and new_category in CATEGORIES:
-            supabase.table("events").update({"category": new_category}).eq("id", event["id"]).execute()
+    for event in events:
+        event_id = event["id"]
+        new_category = classifications.get(event_id)
+        if new_category:
+            supabase.table("events").update({"category": new_category}).eq("id", event_id).execute()
             print(f"✅ Categorized '{event['title']}' as {new_category}")
         else:
             print(f"⚠️ Failed to categorize '{event['title']}': Invalid or missing category response.")
