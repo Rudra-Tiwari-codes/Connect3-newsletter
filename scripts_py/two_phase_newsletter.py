@@ -2,7 +2,7 @@
 Two-Phase Newsletter Delivery System
 
 Phase 1: Send 9 random events for discovery
-Phase 2: After 5 minutes, send preference-based newsletter (3-3-1-2 distribution)
+Phase 2: Send preference-based newsletter for every subsequent iteration
 
 Optimized: Uses batch category fetching to reduce DB calls from N to 1.
 """
