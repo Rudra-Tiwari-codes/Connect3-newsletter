@@ -9,7 +9,6 @@ Optimized: Uses batch category fetching to reduce DB calls from N to 1.
 
 import random
 import sys
-import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Any, Optional
@@ -30,16 +29,14 @@ SITE_URL = get_env("NEXT_PUBLIC_SITE_URL") or get_env("NEXT_PUBLIC_APP_URL") or 
 FEEDBACK_BASE_URL = f"{SITE_URL.rstrip('/')}/feedback"
 DEFAULT_PHASE2_TOTAL = 9
 MAX_EVENT_LOOKAHEAD_DAYS = 30
-WAIT_FOR_INTERACTIONS_ENV = False
 
 CATEGORY_COLUMNS = [
-    "tech_innovation", "career_networking", "academic_workshops",
-    "social_cultural", "entrepreneurship", "sports_fitness",
-    "arts_music", "volunteering_community", "food_dining",
-    "travel_adventure", "health_wellness", "environment_sustainability",
-    "gaming_esports"
+    "academic_workshops", "arts_music", "career_networking", 
+    "entrepreneurship", "environment_sustainability", "food_dining", 
+    "gaming_esports", "health_wellness", "social_cultural", 
+    "sports_fitness", "tech_innovation", "travel_adventure", 
+    "volunteering_community", "recruitment"
 ]
-
 
 def log_email_sent(user_id: str, events_sent: List[str], status: str = "sent", error_message: str = None) -> None:
     """Log email delivery to email_logs table."""
@@ -57,7 +54,6 @@ def log_email_sent(user_id: str, events_sent: List[str], status: str = "sent", e
         logger.debug(f"Logged email: user={user_id[:8]}..., status={status}")
     except Exception as e:
         logger.warning(f"Failed to log email: {e}")
-
 
 class CategoryCache:
     """
@@ -112,15 +108,12 @@ class CategoryCache:
         self._cache.clear()
         self._loaded = False
 
-
 # Global cache instance - loaded once per newsletter run
 _category_cache = CategoryCache()
-
 
 def get_category_for_event(event_id: str) -> str:
     """Get category for an event from cache (O(1) lookup after batch load)."""
     return _category_cache.get(event_id)
-
 
 def log_probability_distribution(user_id: str) -> None:
     """Log user preference distribution as a simple bar chart."""
@@ -149,7 +142,6 @@ def log_probability_distribution(user_id: str) -> None:
     except Exception as exc:
         logger.warning(f"Failed to print probability distribution for user {user_id[:8]}...: {exc}")
 
-
 def _parse_event_datetime(value: Optional[str]) -> Optional[datetime]:
     if not value:
         return None
@@ -161,7 +153,6 @@ def _parse_event_datetime(value: Optional[str]) -> Optional[datetime]:
         return parsed.replace(tzinfo=timezone.utc)
     return parsed
 
-
 def _event_datetime_from_post(post: Dict[str, Any]) -> Optional[datetime]:
     for key in ("event_date", "timestamp", "date", "created_at"):
         parsed = _parse_event_datetime(post.get(key))
@@ -169,14 +160,12 @@ def _event_datetime_from_post(post: Dict[str, Any]) -> Optional[datetime]:
             return parsed
     return None
 
-
 def _is_event_within_window(post: Dict[str, Any], now: datetime, max_days: int) -> bool:
     event_dt = _event_datetime_from_post(post)
     if not event_dt:
         return False
     delta_days = (event_dt - now).total_seconds() / 86400
     return 0 <= delta_days <= max_days
-
 
 def load_posts() -> List[Dict[str, Any]]:
     """Load events from Supabase."""
@@ -188,17 +177,17 @@ def load_posts() -> List[Dict[str, Any]]:
     for post in posts:
         if post.get("id") is not None:
             post["id"] = str(post["id"])
+        if not post.get("isAttendable"):
+            continue
         if _is_event_within_window(post, now, MAX_EVENT_LOOKAHEAD_DAYS):
             filtered.append(post)
     return filtered
-
 
 def is_new_recipient(user: Dict[str, Any]) -> bool:
     """Determine if a user should receive the two-phase onboarding flow."""
     is_new_flag = user.get("is_new_recipient")
     first_sent_at = user.get("first_newsletter_sent_at")
     return bool(is_new_flag) or not first_sent_at
-
 
 def mark_user_onboarded(user: Dict[str, Any]) -> None:
     """Mark a user as no longer new after the initial newsletter."""
@@ -211,7 +200,6 @@ def mark_user_onboarded(user: Dict[str, Any]) -> None:
     except Exception as e:
         logger.warning(f"Failed to update onboarding status for user {user.get('id')}: {e}")
 
-
 def clear_user_interactions(user_id: str):
     """Clear existing interactions for a user (fresh start)"""
     try:
@@ -219,7 +207,6 @@ def clear_user_interactions(user_id: str):
         logger.info(f"Cleared previous interactions for user {user_id}")
     except Exception as e:
         logger.warning(f"Could not clear interactions: {e}")
-
 
 def build_event_from_post(
     post: Dict[str, Any],
@@ -253,7 +240,6 @@ def build_event_from_post(
         event["is_exploration"] = True
     return event
 
-
 def _annotate_group_header(
     events: List[Dict[str, Any]],
     title: str,
@@ -270,14 +256,12 @@ def _annotate_group_header(
         events[0]["group_action_event_id"] = event_id
         events[0]["group_action_category"] = action_category
 
-
 def _resolve_category(post: Dict[str, Any]) -> str:
     post_category = post.get("category")
     if post_category:
         return post_category
     event_id = post.get("id")
     return get_category_for_event(event_id)
-
 
 def send_phase1_random_newsletter(user: Dict, posts: List[Dict]) -> List[str]:
     """Phase 1: Send 9 random events for initial discovery"""
@@ -306,7 +290,6 @@ def send_phase1_random_newsletter(user: Dict, posts: List[Dict]) -> List[str]:
         raise
     
     return sent_ids
-
 
 def get_user_preferred_categories(user_id: str) -> List[str]:
     """
@@ -342,7 +325,6 @@ def get_user_preferred_categories(user_id: str) -> List[str]:
     defaults = ["tech_innovation", "career_networking"]
     return defaults[:2]
 
-
 def get_events_by_category(posts: List[Dict], category: str, exclude_ids: set, limit: int) -> List[Dict]:
     """Get events matching a specific category"""
     candidates = []
@@ -366,7 +348,6 @@ def get_events_by_category(posts: List[Dict], category: str, exclude_ids: set, l
         exclude_ids.add(event_id)
         result.append(event)
     return result
-
 
 def get_exploration_events(posts: List[Dict], exclude_ids: set, preferred_categories: List[str], limit: int) -> List[Dict]:
     """
@@ -406,7 +387,6 @@ def get_exploration_events(posts: List[Dict], exclude_ids: set, preferred_catego
     
     return result
 
-
 def store_user_top_categories(user_id: str, categories: List[str]) -> None:
     """
     Store user's top categories in the users table for future reference.
@@ -419,7 +399,6 @@ def store_user_top_categories(user_id: str, categories: List[str]) -> None:
         logger.info(f"Stored top categories: {categories}")
     except Exception as e:
         logger.warning(f"Could not store top categories: {e}")
-
 
 def top_up_events(posts: List[Dict], exclude_ids: set, limit: int) -> List[Dict]:
     """Fill remaining slots with random events not already selected."""
@@ -434,7 +413,6 @@ def top_up_events(posts: List[Dict], exclude_ids: set, limit: int) -> List[Dict]
         result.append(build_event_from_post(post, category))
         exclude_ids.add(event_id)
     return result
-
 
 def send_phase2_preference_newsletter(user: Dict, posts: List[Dict], phase1_ids: List[str]):
     """Phase 2: Send preference-based newsletter with top-2 + random diversity mix."""
@@ -488,13 +466,10 @@ def send_phase2_preference_newsletter(user: Dict, posts: List[Dict], phase1_ids:
     except Exception as e:
         log_email_sent(user["id"], sent_ids, status="failed", error_message=str(e))
         raise
-
-
-def run_two_phase_newsletter(delay_minutes: int = 5, wait_for_interactions: Optional[bool] = None):
-    """Run the complete two-phase newsletter flow."""
-    if wait_for_interactions is None:
-        wait_for_interactions = WAIT_FOR_INTERACTIONS_ENV
-
+"""
+Function to run the newsletter flow
+"""
+def run_two_phase_newsletter():
     posts = load_posts()
     logger.info(f"Loaded {len(posts)} events from Supabase")
     
@@ -558,95 +533,17 @@ def run_two_phase_newsletter(delay_minutes: int = 5, wait_for_interactions: Opti
             except Exception as exc:
                 logger.error(f"Failed to send Phase 1 to {user['email']}: {exc}")
 
-        if not wait_for_interactions:
-            logger.info("="*50)
-            logger.info("SKIPPING PHASE 2 WAIT (CRON MODE)")
-            logger.info("New users will receive Phase 2 on the next scheduled run.")
-            logger.info("="*50)
-            logger.info("TWO-PHASE NEWSLETTER COMPLETE!")
-            logger.info("="*50)
-            return
-
         logger.info("="*50)
-        logger.info(f"WAITING UP TO {delay_minutes} MINUTES...")
-        logger.info("Scanning for interactions every 10 seconds to send Phase 2 immediately.")
+        logger.info("SKIPPING PHASE 2 WAIT (CRON MODE)")
+        logger.info("New users will receive Phase 2 on the next scheduled run.")
         logger.info("="*50)
-
-        # Track who has been sent Phase 2 to avoid double sending
-        phase2_sent_users = set()
-        
-        # Poll loop
-        poll_interval = 10
-        max_duration = delay_minutes * 60
-        start_time = time.time()
-        
-        while (time.time() - start_time) < max_duration:
-            # Check for interactions for ALL pending users
-            pending_users = [u for u in new_users if u["id"] not in phase2_sent_users]
-            if not pending_users:
-                logger.info("All users have interacted! Finishing early.")
-                break
-                
-            elapsed = int(time.time() - start_time)
-            logger.debug(f"[{elapsed}s / {max_duration}s] Checking interactions for {len(pending_users)} users...")
-            
-            for user in pending_users:
-                # Check if user has ANY interactions OR if their preferences have been updated
-                # This handles both direct interactions and preference updates from clicks
-                interaction_count = 0
-                prefs_changed = False
-                
-                try:
-                    # Check interactions table
-                    resp = supabase.table("interactions").select("count", count="exact").eq("user_id", user["id"]).execute()
-                    interaction_count = resp.count or 0
-                    
-                    # Also check if user_preferences has non-default scores (indicates clicks happened)
-                    prefs_resp = supabase.table("user_preferences").select("*").eq("user_id", user["id"]).limit(1).execute()
-                    if prefs_resp.data:
-                        p = prefs_resp.data[0]
-                        # Check if any score differs from baseline 0.077 by more than 0.01
-                        for cat in ['tech_innovation', 'career_networking', 'academic_workshops', 'social_cultural', 
-                                    'entrepreneurship', 'sports_fitness', 'arts_music', 'volunteering_community',
-                                    'food_dining', 'travel_adventure', 'health_wellness', 'environment_sustainability', 'gaming_esports']:
-                            if abs(p.get(cat, 0.077) - 0.077) > 0.01:
-                                prefs_changed = True
-                                break
-                except Exception as e:
-                    logger.warning(f"Error checking interactions: {e}")
-                
-                # If they have interacted OR preferences changed, trigger Phase 2 NOW
-                if interaction_count > 0 or prefs_changed:
-                    logger.info(f">>> INTERACTION DETECTED for {user['email']}! (interactions={interaction_count}, prefs_changed={prefs_changed})")
-                    phase1_ids = phase1_sent.get(user["id"], [])
-                    try:
-                        send_phase2_preference_newsletter(user, posts, phase1_ids)
-                        logger.info("Phase 2 sent: Personalized events (Instant)")
-                        phase2_sent_users.add(user["id"])
-                    except Exception as exc:
-                        logger.error(f"Failed to send Phase 2 to {user['email']}: {exc}")
-            
-            time.sleep(poll_interval)
-
+        logger.info("TWO-PHASE NEWSLETTER COMPLETE!")
         logger.info("="*50)
-        logger.info("TIMEOUT REACHED - SENDING DEFAULTS TO REMAINING USERS")
-        logger.info("="*50)
-
-        # Process anyone left who hasn't interacted
-        remaining_users = [u for u in new_users if u["id"] not in phase2_sent_users]
-        for user in remaining_users:
-            logger.info(f"Processing (Default): {user['email']}")
-            phase1_ids = phase1_sent.get(user["id"], [])
-            try:
-                send_phase2_preference_newsletter(user, posts, phase1_ids)
-                logger.info("Phase 2 sent: Default Recommendation events")
-            except Exception as exc:
-                logger.error(f"Failed to send Phase 2 to {user['email']}: {exc}")
+        return
     
     logger.info("="*50)
     logger.info("TWO-PHASE NEWSLETTER COMPLETE!")
     logger.info("="*50)
-
 
 if __name__ == "__main__":
     setup_logging()
@@ -656,22 +553,4 @@ if __name__ == "__main__":
     for noisy_logger in ['httpx', 'httpcore', 'hpack', 'h2', 'urllib3']:
         _logging.getLogger(noisy_logger).setLevel(_logging.WARNING)
     
-    import argparse
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--delay-minutes", type=int, default=5)
-    parser.add_argument("--wait-for-interactions", action="store_true")
-    parser.add_argument("--no-wait-for-interactions", action="store_true")
-    args = parser.parse_args()
-
-    wait_for_interactions = None
-    if args.wait_for_interactions:
-        wait_for_interactions = True
-    if args.no_wait_for_interactions:
-        wait_for_interactions = False
-
-    # Run the flow; default mode does not wait unless explicitly set via CLI flags.
-    run_two_phase_newsletter(
-        delay_minutes=args.delay_minutes,
-        wait_for_interactions=wait_for_interactions,
-    )
+    run_two_phase_newsletter()

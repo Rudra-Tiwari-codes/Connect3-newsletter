@@ -12,7 +12,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from python_app.embeddings import embed_event
 from python_app.supabase_client import ensure_ok, supabase
 
-
 DEFAULT_POSTS_PATH = Path(__file__).resolve().parents[1] / "all_posts.json"
 
 
