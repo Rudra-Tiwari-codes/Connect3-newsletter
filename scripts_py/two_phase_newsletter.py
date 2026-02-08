@@ -16,6 +16,7 @@ from typing import Dict, List, Any, Optional
 # Add parent directory to path so we can import python_app from any directory
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from python_app.auth_users import fetch_auth_emails
 from python_app.email_sender import send_email
 from python_app.email_templates import generate_personalized_email, format_category
 from python_app.logger import get_logger, setup_logging
@@ -55,66 +56,6 @@ def log_email_sent(user_id: str, events_sent: List[str], status: str = "sent", e
     except Exception as e:
         logger.warning(f"Failed to log email: {e}")
 
-class CategoryCache:
-    """
-    Batch-fetches all event categories at once to avoid N+1 query problem.
-    
-    Instead of calling the database once per event (N calls), this fetches
-    all categories in a single query and caches them for O(1) lookups.
-    """
-    
-    def __init__(self):
-        self._cache: Dict[str, str] = {}
-        self._loaded = False
-    
-    def load_all(self, event_ids: Optional[List[str]] = None) -> None:
-        """
-        Load all categories from the database in a single query.
-        
-        Args:
-            event_ids: Optional list of specific event IDs to fetch.
-                       If None, fetches ALL categories.
-        """
-        try:
-            if event_ids:
-                # Fetch only specific events (still much better than N queries)
-                resp = supabase.table("event_embeddings").select("event_id, category").in_("event_id", event_ids).execute()
-            else:
-                # Fetch all categories at once
-                resp = supabase.table("event_embeddings").select("event_id, category").execute()
-            
-            if resp.data:
-                for row in resp.data:
-                    event_id = row.get("event_id")
-                    category = row.get("category")
-                    if event_id:
-                        self._cache[event_id] = category or "general"
-            
-            self._loaded = True
-            logger.info(f"CategoryCache: Loaded {len(self._cache)} categories in 1 query")
-        except Exception as e:
-            logger.warning(f"Failed to batch load categories: {e}")
-            self._loaded = True  # Prevent retry loops
-    
-    def get(self, event_id: str) -> str:
-        """
-        Get category for an event, using cache if available.
-        Falls back to 'general' if not found.
-        """
-        return self._cache.get(event_id, "general")
-    
-    def clear(self) -> None:
-        """Clear the cache."""
-        self._cache.clear()
-        self._loaded = False
-
-# Global cache instance - loaded once per newsletter run
-_category_cache = CategoryCache()
-
-def get_category_for_event(event_id: str) -> str:
-    """Get category for an event from cache (O(1) lookup after batch load)."""
-    return _category_cache.get(event_id)
-
 def log_probability_distribution(user_id: str) -> None:
     """Log user preference distribution as a simple bar chart."""
     try:
@@ -142,29 +83,47 @@ def log_probability_distribution(user_id: str) -> None:
     except Exception as exc:
         logger.warning(f"Failed to print probability distribution for user {user_id[:8]}...: {exc}")
 
-def _parse_event_datetime(value: Optional[str]) -> Optional[datetime]:
+def _parse_event_datetime(value: Any) -> Optional[datetime]:
     if not value:
         return None
-    try:
-        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
-    except Exception:
-        return None
-    if parsed.tzinfo is None:
-        return parsed.replace(tzinfo=timezone.utc)
-    return parsed
-
-def _event_datetime_from_post(post: Dict[str, Any]) -> Optional[datetime]:
-    for key in ("event_date", "timestamp", "date", "created_at"):
-        parsed = _parse_event_datetime(post.get(key))
-        if parsed:
-            return parsed
+    if isinstance(value, datetime):
+        return value if value.tzinfo else value.replace(tzinfo=timezone.utc)
+    if isinstance(value, str):
+        try:
+            parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        except Exception:
+            return None
+        if parsed.tzinfo is None:
+            return parsed.replace(tzinfo=timezone.utc)
+        return parsed
     return None
 
+def _event_window_from_post(post: Dict[str, Any]) -> tuple[Optional[datetime], Optional[datetime]]:
+    end_dt = None
+    for key in ("end", "end_time", "end_date"):
+        end_dt = _parse_event_datetime(post.get(key))
+        if end_dt:
+            break
+
+    start_dt = None
+    for key in ("start", "start_time", "start_date", "event_date", "timestamp", "date", "created_at"):
+        start_dt = _parse_event_datetime(post.get(key))
+        if start_dt:
+            break
+
+    return start_dt, end_dt
+
 def _is_event_within_window(post: Dict[str, Any], now: datetime, max_days: int) -> bool:
-    event_dt = _event_datetime_from_post(post)
-    if not event_dt:
+    start_dt, end_dt = _event_window_from_post(post)
+    if not end_dt and not start_dt:
         return False
-    delta_days = (event_dt - now).total_seconds() / 86400
+    if end_dt is None:
+        end_dt = start_dt
+    if end_dt is None:
+        return False
+    if end_dt < now:
+        return False
+    delta_days = (end_dt - now).total_seconds() / 86400
     return 0 <= delta_days <= max_days
 
 def load_posts() -> List[Dict[str, Any]]:
@@ -177,7 +136,10 @@ def load_posts() -> List[Dict[str, Any]]:
     for post in posts:
         if post.get("id") is not None:
             post["id"] = str(post["id"])
-        if not post.get("isAttendable"):
+        attendable = post.get("is_attendable")
+        if attendable is None:
+            attendable = post.get("isAttendable")
+        if not attendable:
             continue
         if _is_event_within_window(post, now, MAX_EVENT_LOOKAHEAD_DAYS):
             filtered.append(post)
@@ -195,8 +157,8 @@ def mark_user_onboarded(user: Dict[str, Any]) -> None:
     if not user.get("first_newsletter_sent_at"):
         payload["first_newsletter_sent_at"] = datetime.now(timezone.utc).isoformat()
     try:
-        resp = supabase.table("users").update(payload).eq("id", user["id"]).execute()
-        ensure_ok(resp, action="update user onboarding status")
+        resp = supabase.table("profiles").update(payload).eq("id", user["id"]).execute()
+        ensure_ok(resp, action="update profile onboarding status")
     except Exception as e:
         logger.warning(f"Failed to update onboarding status for user {user.get('id')}: {e}")
 
@@ -257,11 +219,7 @@ def _annotate_group_header(
         events[0]["group_action_category"] = action_category
 
 def _resolve_category(post: Dict[str, Any]) -> str:
-    post_category = post.get("category")
-    if post_category:
-        return post_category
-    event_id = post.get("id")
-    return get_category_for_event(event_id)
+    return post.get("category") or "general"
 
 def send_phase1_random_newsletter(user: Dict, posts: List[Dict]) -> List[str]:
     """Phase 1: Send 9 random events for initial discovery"""
@@ -393,7 +351,7 @@ def store_user_top_categories(user_id: str, categories: List[str]) -> None:
     This allows tracking preference evolution over time.
     """
     try:
-        supabase.table("users").update({
+        supabase.table("profiles").update({
             "top_categories": categories
         }).eq("id", user_id).execute()
         logger.info(f"Stored top categories: {categories}")
@@ -473,18 +431,24 @@ def run_two_phase_newsletter():
     posts = load_posts()
     logger.info(f"Loaded {len(posts)} events from Supabase")
     
-    # OPTIMIZATION: Batch-load all categories in a single DB query
-    # This replaces N individual queries with 1 query
-    if any(not p.get("category") for p in posts):
-        event_ids = [p.get("id") for p in posts if p.get("id")]
-        _category_cache.load_all(event_ids)
-    
     # Get users
-    users_resp = supabase.table("users").select(
-        "id,email,name,is_new_recipient,first_newsletter_sent_at,is_unsubscribed"
+    users_resp = supabase.table("profiles").select(
+        "id,first_name,last_name,is_new_recipient,first_newsletter_sent_at,is_unsubscribed"
     ).execute()
-    ensure_ok(users_resp, action="select users")
+    ensure_ok(users_resp, action="select profiles")
     users = users_resp.data or []
+
+    auth_emails = fetch_auth_emails([u.get("id") for u in users if u.get("id")])
+    for user in users:
+        user_id = user.get("id")
+        auth_email = auth_emails.get(str(user_id)) if user_id else None
+        if auth_email:
+            user["email"] = auth_email
+        first_name = (user.get("first_name") or "").strip()
+        last_name = (user.get("last_name") or "").strip()
+        full_name = f"{first_name} {last_name}".strip()
+        if full_name:
+            user["name"] = full_name
 
     new_users = []
     returning_users = []

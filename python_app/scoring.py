@@ -157,8 +157,8 @@ def _urgency_score(event: Dict[str, Any]) -> float:
 
 
 def rank_events_for_user(user_id: str, limit: int = 10) -> List[Dict[str, Any]]:
-  user_resp = supabase.table("users").select("*").eq("id", user_id).limit(1).execute()
-  ensure_ok(user_resp, action="select users")
+  user_resp = supabase.table("profiles").select("*").eq("id", user_id).limit(1).execute()
+  ensure_ok(user_resp, action="select profiles")
   if not user_resp.data:
     raise RuntimeError(f"User not found: {user_id}")
 

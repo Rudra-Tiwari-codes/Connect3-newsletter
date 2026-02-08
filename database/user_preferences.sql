@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS public.user_preferences (
     tech_innovation DOUBLE PRECISION DEFAULT 0.0714,
     travel_adventure DOUBLE PRECISION DEFAULT 0.0714,
     volunteering_community DOUBLE PRECISION DEFAULT 0.0714,
-    recruitment DOUBLE PRECISION DEFAULT 0.0714
+    recruitment DOUBLE PRECISION DEFAULT 0.0714,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     UNIQUE(user_id)

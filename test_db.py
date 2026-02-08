@@ -15,7 +15,7 @@ def init_test():
         "name": "Integration Test User",
         "is_new_recipient": True
     }
-    user = supabase.table("users").insert(user_data).execute()
+    user = supabase.table("profiles").insert(user_data).execute()
     print(f"Created User: {user.data[0]['id']}")
 
     # 2. Insert a dummy event

@@ -81,7 +81,7 @@ class handler(BaseHTTPRequestHandler):
                 "is_unsubscribed": True,
                 "unsubscribed_at": datetime.now(timezone.utc).isoformat(),
             }
-            supabase.table("users").update(payload).eq("id", user_id).execute()
+            supabase.table("profiles").update(payload).eq("id", user_id).execute()
         except Exception as exc:
             logger.error(f"Unsubscribe failed for user {user_id}: {exc}")
             _send_plain(self, 500, "An error occurred. Please try again later.")

@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Mapping
 
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
+from .auth_users import fetch_auth_email
 from .config import get_env
 from .email_templates import generate_personalized_email
 from .logger import get_logger
@@ -66,15 +67,22 @@ class EmailDeliveryService:
     logger.info(f"Email delivery complete: {success} sent, {failed} failed")
 
   def send_personalized_email(self, user_id: str, events: List[Dict[str, Any]]) -> None:
-    user_resp = supabase.table("users").select("*").eq("id", user_id).limit(1).execute()
-    ensure_ok(user_resp, action="select users")
+    user_resp = supabase.table("profiles").select("*").eq("id", user_id).limit(1).execute()
+    ensure_ok(user_resp, action="select profiles")
     user = user_resp.data[0] if user_resp.data else None
     if not user:
       raise RuntimeError(f"Failed to fetch user {user_id}")
 
-    user_email = user.get("email")
+    user_email = fetch_auth_email(user_id) or user.get("email")
     if not user_email:
       raise RuntimeError(f"User {user_id} has no email address")
+    user["email"] = user_email
+    if not user.get("name"):
+      first_name = (user.get("first_name") or "").strip()
+      last_name = (user.get("last_name") or "").strip()
+      full_name = f"{first_name} {last_name}".strip()
+      if full_name:
+        user["name"] = full_name
     if user.get("is_unsubscribed"):
       logger.info(f"Skipping unsubscribed user: {user_email}")
       return
