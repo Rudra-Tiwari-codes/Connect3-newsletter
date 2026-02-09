@@ -16,7 +16,7 @@ from typing import Dict, List, Any, Optional
 # Add parent directory to path so we can import python_app from any directory
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from python_app.auth_users import fetch_auth_emails
+from python_app.subscribers import fetch_subscriber_emails
 from python_app.email_sender import send_email
 from python_app.email_templates import generate_personalized_email, format_category
 from python_app.logger import get_logger, setup_logging
@@ -241,6 +241,7 @@ def send_phase1_random_newsletter(user: Dict, posts: List[Dict]) -> List[str]:
     subject = f"Phase 1: Discover 9 Events - Tell Us What You Like!"
     
     try:
+        logger.info(f"Sending Phase 1 email to {user['email']}")
         send_email(user["email"], subject, html)
         log_email_sent(user["id"], sent_ids, status="sent")
     except Exception as e:
@@ -419,6 +420,7 @@ def send_phase2_preference_newsletter(user: Dict, posts: List[Dict], phase1_ids:
     
     sent_ids = [e.get("event_id") or e.get("id") for e in selected_events]
     try:
+        logger.info(f"Sending Phase 2 email to {user['email']}")
         send_email(user["email"], subject, html)
         log_email_sent(user["id"], sent_ids, status="sent")
     except Exception as e:
@@ -438,12 +440,12 @@ def run_two_phase_newsletter():
     ensure_ok(users_resp, action="select profiles")
     users = users_resp.data or []
 
-    auth_emails = fetch_auth_emails([u.get("id") for u in users if u.get("id")])
+    subscriber_emails = fetch_subscriber_emails([u.get("id") for u in users if u.get("id")])
     for user in users:
         user_id = user.get("id")
-        auth_email = auth_emails.get(str(user_id)) if user_id else None
-        if auth_email:
-            user["email"] = auth_email
+        subscriber_email = subscriber_emails.get(str(user_id)) if user_id else None
+        if subscriber_email:
+            user["email"] = subscriber_email
         first_name = (user.get("first_name") or "").strip()
         last_name = (user.get("last_name") or "").strip()
         full_name = f"{first_name} {last_name}".strip()

@@ -1,19 +1,17 @@
-"""Helpers for accessing Supabase auth.users data."""
+"""Helpers for accessing Supabase auth.users data via the Admin API."""
 
 from typing import Dict, List, Optional
 
 from .logger import get_logger
-from .supabase_client import ensure_ok, supabase
+from .supabase_client import supabase
 
 logger = get_logger(__name__)
 
 
-def _auth_users_table():
-    """Return a query builder for auth.users, compatible across supabase-py versions."""
-    schema_fn = getattr(supabase, "schema", None)
-    if callable(schema_fn):
-        return supabase.schema("auth").table("users")
-    return supabase.table("auth.users")
+def _auth_admin():
+    """Return the Supabase Auth Admin client if available."""
+    auth = getattr(supabase, "auth", None)
+    return getattr(auth, "admin", None) if auth else None
 
 
 def fetch_auth_emails(user_ids: List[str]) -> Dict[str, str]:
@@ -21,18 +19,27 @@ def fetch_auth_emails(user_ids: List[str]) -> Dict[str, str]:
     if not user_ids:
         return {}
 
-    try:
-        resp = _auth_users_table().select("id,email").in_("id", user_ids).execute()
-        ensure_ok(resp, action="select auth.users emails")
-    except Exception as exc:
-        logger.warning(f"Failed to fetch auth emails: {exc}")
+    admin = _auth_admin()
+    if not admin:
+        logger.warning("Supabase auth admin client not available; cannot fetch auth emails.")
         return {}
 
     emails: Dict[str, str] = {}
-    for row in resp.data or []:
-        user_id = row.get("id")
-        email = row.get("email")
-        if user_id and email:
+    for user_id in user_ids:
+        if not user_id:
+            continue
+        try:
+            resp = admin.get_user_by_id(user_id)
+        except Exception as exc:
+            logger.warning(f"Failed to fetch auth email for user {user_id}: {exc}")
+            continue
+        user = getattr(resp, "user", None)
+        if user is None and isinstance(resp, dict):
+            user = resp.get("user")
+        if not user:
+            continue
+        email = getattr(user, "email", None) if not isinstance(user, dict) else user.get("email")
+        if email:
             emails[str(user_id)] = email
     return emails
 
@@ -42,14 +49,20 @@ def fetch_auth_email(user_id: str) -> Optional[str]:
     if not user_id:
         return None
 
+    admin = _auth_admin()
+    if not admin:
+        logger.warning("Supabase auth admin client not available; cannot fetch auth email.")
+        return None
+
     try:
-        resp = _auth_users_table().select("email").eq("id", user_id).limit(1).execute()
-        ensure_ok(resp, action="select auth.users email")
+        resp = admin.get_user_by_id(user_id)
     except Exception as exc:
         logger.warning(f"Failed to fetch auth email for user {user_id}: {exc}")
         return None
 
-    row = (resp.data or [None])[0]
-    if not row:
+    user = getattr(resp, "user", None)
+    if user is None and isinstance(resp, dict):
+        user = resp.get("user")
+    if not user:
         return None
-    return row.get("email")
+    return getattr(user, "email", None) if not isinstance(user, dict) else user.get("email")

@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Mapping
 
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
-from .auth_users import fetch_auth_email
+from .subscribers import fetch_subscriber_email
 from .config import get_env
 from .email_templates import generate_personalized_email
 from .logger import get_logger
@@ -73,7 +73,7 @@ class EmailDeliveryService:
     if not user:
       raise RuntimeError(f"Failed to fetch user {user_id}")
 
-    user_email = fetch_auth_email(user_id) or user.get("email")
+    user_email = fetch_subscriber_email(user_id) or user.get("email")
     if not user_email:
       raise RuntimeError(f"User {user_id} has no email address")
     user["email"] = user_email
