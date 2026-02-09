@@ -9,9 +9,15 @@ try:
   from dotenv import load_dotenv
 
   # Load .env in project root if present
-  _root_env = Path(__file__).resolve().parents[1] / ".env"
+  _root_dir = Path(__file__).resolve().parents[1]
+  _root_env = _root_dir / ".env"
   if _root_env.exists():
     load_dotenv(_root_env)
+
+  # Load .env.local after .env so local overrides take precedence
+  _root_env_local = _root_dir / ".env.local"
+  if _root_env_local.exists():
+    load_dotenv(_root_env_local, override=True)
 except Exception:
   # If python-dotenv isn't installed we silently continue; env vars must be set externally
   pass
