@@ -14,7 +14,7 @@ def _try_select_email(
 ) -> Optional[Dict[str, str]]:
     try:
         resp = (
-            supabase.table("newsletter_subscribers")
+            supabase.table("subscribers")
             .select(f"{column},email")
             .in_(column, list(user_ids))
             .execute()

@@ -162,14 +162,6 @@ def mark_user_onboarded(user: Dict[str, Any]) -> None:
     except Exception as e:
         logger.warning(f"Failed to update onboarding status for user {user.get('id')}: {e}")
 
-def clear_user_interactions(user_id: str):
-    """Clear existing interactions for a user (fresh start)"""
-    try:
-        supabase.table("interactions").delete().eq("user_id", user_id).execute()
-        logger.info(f"Cleared previous interactions for user {user_id}")
-    except Exception as e:
-        logger.warning(f"Could not clear interactions: {e}")
-
 def build_event_from_post(
     post: Dict[str, Any],
     category: Optional[str],
@@ -359,19 +351,6 @@ def store_user_top_categories(user_id: str, categories: List[str]) -> None:
     except Exception as e:
         logger.warning(f"Could not store top categories: {e}")
 
-def top_up_events(posts: List[Dict], exclude_ids: set, limit: int) -> List[Dict]:
-    """Fill remaining slots with random events not already selected."""
-    available = [p for p in posts if p.get("id") not in exclude_ids]
-    if not available or limit <= 0:
-        return []
-    selected = random.sample(available, min(limit, len(available)))
-    result = []
-    for post in selected:
-        event_id = post.get("id")
-        category = _resolve_category(post)
-        result.append(build_event_from_post(post, category))
-        exclude_ids.add(event_id)
-    return result
 
 def send_phase2_preference_newsletter(user: Dict, posts: List[Dict], phase1_ids: List[str]):
     """Phase 2: Send preference-based newsletter with top-2 + random diversity mix."""
