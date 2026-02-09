@@ -14,11 +14,12 @@ from pathlib import Path
 # Add parent directory to path for python_app imports in Vercel serverless
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from python_app.categories import CONNECT3_CATEGORIES, UNIFORM_BASELINE
 from python_app.supabase_client import supabase
 
 logger = logging.getLogger(__name__)
 
-USERS_TABLE = "users"
+USERS_TABLE = "subscribers"
 ALLOWED_ORIGIN = None
 
 EMAIL_PATTERN = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
@@ -117,7 +118,8 @@ class handler(BaseHTTPRequestHandler):
             return
 
         record = {
-            "name": f"{first_name} {last_name}".strip(),
+            "first_name": first_name,
+            "last_name": last_name,
             "email": email,
             "is_new_recipient": True,
             "is_unsubscribed": False,
@@ -136,23 +138,11 @@ class handler(BaseHTTPRequestHandler):
             new_user_id = resp.data[0].get("id")
             if new_user_id:
                 try:
-                    # Create user_preferences with uniform baseline scores (1/13 ≈ 0.077)
-                    supabase.table("user_preferences").insert({
-                        "user_id": new_user_id,
-                        "tech_innovation": 0.077,
-                        "career_networking": 0.077,
-                        "academic_workshops": 0.077,
-                        "social_cultural": 0.077,
-                        "entrepreneurship": 0.077,
-                        "sports_fitness": 0.077,
-                        "arts_music": 0.077,
-                        "volunteering_community": 0.077,
-                        "food_dining": 0.077,
-                        "travel_adventure": 0.077,
-                        "health_wellness": 0.077,
-                        "environment_sustainability": 0.077,
-                        "gaming_esports": 0.077,
-                    }).execute()
+                    # Create user_preferences with uniform baseline scores
+                    prefs_payload = {"user_id": new_user_id}
+                    for category in CONNECT3_CATEGORIES:
+                        prefs_payload[category] = UNIFORM_BASELINE
+                    supabase.table("user_preferences").insert(prefs_payload).execute()
                     logger.info("Created user_preferences for user: %s", new_user_id)
                 except Exception as pref_exc:
                     logger.warning("Could not create user_preferences: %s", pref_exc)

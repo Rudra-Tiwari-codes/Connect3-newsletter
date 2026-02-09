@@ -17,6 +17,7 @@ from typing import Dict, List, Any, Optional
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from python_app.subscribers import fetch_subscriber_emails
+from python_app.categories import CONNECT3_CATEGORIES
 from python_app.email_sender import send_email
 from python_app.email_templates import generate_personalized_email, format_category
 from python_app.logger import get_logger, setup_logging
@@ -31,13 +32,7 @@ FEEDBACK_BASE_URL = f"{SITE_URL.rstrip('/')}/feedback"
 DEFAULT_PHASE2_TOTAL = 9
 MAX_EVENT_LOOKAHEAD_DAYS = 30
 
-CATEGORY_COLUMNS = [
-    "academic_workshops", "arts_music", "career_networking", 
-    "entrepreneurship", "environment_sustainability", "food_dining", 
-    "gaming_esports", "health_wellness", "social_cultural", 
-    "sports_fitness", "tech_innovation", "travel_adventure", 
-    "volunteering_community", "recruitment"
-]
+CATEGORY_COLUMNS = CONNECT3_CATEGORIES
 
 def log_email_sent(user_id: str, events_sent: List[str], status: str = "sent", error_message: str = None) -> None:
     """Log email delivery to email_logs table."""

@@ -7,8 +7,8 @@ be imported from here to ensure consistency.
 
 from typing import FrozenSet, List
 
-# The 13 official Connect3 event categories
-# These are used for classification, embeddings, and user preferences
+# The official Connect3 event categories
+# These are used for user preferences
 CONNECT3_CATEGORIES: List[str] = [
     "academic_workshops",
     "arts_music",
@@ -23,6 +23,7 @@ CONNECT3_CATEGORIES: List[str] = [
     "tech_innovation",
     "travel_adventure",
     "volunteering_community",
+    "recruitment",
 ]
 
 # Set version for O(1) lookups
@@ -31,7 +32,7 @@ CONNECT3_CATEGORIES_SET: FrozenSet[str] = frozenset(CONNECT3_CATEGORIES)
 # Number of categories (used for uniform baseline calculations)
 NUM_CATEGORIES: int = len(CONNECT3_CATEGORIES)
 
-# Uniform baseline score for new users: 1/13 ≈ 0.077
+# Uniform baseline score for new users: 1/NUM_CATEGORIES
 UNIFORM_BASELINE: float = 1.0 / NUM_CATEGORIES
 
 # Categories valid for API validation (includes 'general' fallback)
@@ -52,4 +53,5 @@ CATEGORY_DESCRIPTIONS: dict[str, str] = {
     "tech_innovation": "technology, AI, machine learning, coding",
     "travel_adventure": "travel, adventure, outdoor activities, exploration",
     "volunteering_community": "volunteering, community service, charity events",
+    "recruitment": "recruitment, hiring, job fairs, talent acquisition",
 }
