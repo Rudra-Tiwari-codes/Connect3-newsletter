@@ -26,7 +26,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from python_app.supabase_client import supabase
-from python_app.categories import CONNECT3_CATEGORIES
+from python_app.categories import CONNECT3_CATEGORIES, UNIFORM_BASELINE
 
 # Configure logging
 logging.basicConfig(
@@ -247,18 +247,8 @@ def update_preferences(user_id: str, category: str, action: str) -> None:
         return
     
     try:
-        # Uniform baseline: 1/13 ≈ 0.077
-        UNIFORM_BASELINE = 1.0 / 13.0
         SCORE_INCREMENT = 0.05
-        
-        # All category columns in user_preferences table
-        ALL_CATEGORIES = [
-            'tech_innovation', 'career_networking', 'academic_workshops',
-            'social_cultural', 'entrepreneurship', 'sports_fitness',
-            'arts_music', 'volunteering_community', 'food_dining',
-            'travel_adventure', 'health_wellness', 'environment_sustainability',
-            'gaming_esports'
-        ]
+        ALL_CATEGORIES = list(CONNECT3_CATEGORIES)
         
         def coerce_score(value, fallback):
             try:
@@ -280,7 +270,7 @@ def update_preferences(user_id: str, category: str, action: str) -> None:
         prefs = (
             supabase.table('user_preferences')
             .select('*')
-            .eq('user_id', user_id)
+            .eq('subscriber_id', user_id)
             .limit(1)
             .execute()
         )
@@ -301,7 +291,7 @@ def update_preferences(user_id: str, category: str, action: str) -> None:
 
             supabase.table('user_preferences').update(
                 normalized_scores
-            ).eq('user_id', user_id).execute()
+            ).eq('subscriber_id', user_id).execute()
             logger.debug(
                 f"Updated preference: {category} = {normalized_scores.get(category, 0.0):.3f}"
             )
@@ -316,7 +306,7 @@ def update_preferences(user_id: str, category: str, action: str) -> None:
             else:
                 pref_scores[category] = max(0.0, UNIFORM_BASELINE - SCORE_INCREMENT)
 
-            pref_record = {'user_id': user_id, **normalize_scores(pref_scores)}
+            pref_record = {'subscriber_id': user_id, **normalize_scores(pref_scores)}
             supabase.table('user_preferences').insert(pref_record).execute()
             logger.info(f"Created complete preferences for user {user_id[:8]}... with {len(ALL_CATEGORIES)} categories")
     except Exception as e:

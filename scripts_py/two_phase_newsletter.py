@@ -7,6 +7,7 @@ Phase 2: Send preference-based newsletter for every subsequent iteration
 Optimized: Uses batch category fetching to reduce DB calls from N to 1.
 """
 
+import math
 import random
 import sys
 from datetime import datetime, timezone
@@ -16,8 +17,8 @@ from typing import Dict, List, Any, Optional
 # Add parent directory to path so we can import python_app from any directory
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from python_app.subscribers import fetch_subscriber_emails
-from python_app.categories import CONNECT3_CATEGORIES
+from python_app.categories import CONNECT3_CATEGORIES, UNIFORM_BASELINE
+from python_app.constants import PREFERENCE_DECAY_DAYS
 from python_app.email_sender import send_email
 from python_app.email_templates import generate_personalized_email, format_category
 from python_app.logger import get_logger, setup_logging
@@ -34,11 +35,21 @@ MAX_EVENT_LOOKAHEAD_DAYS = 30
 
 CATEGORY_COLUMNS = CONNECT3_CATEGORIES
 
-def log_email_sent(user_id: str, events_sent: List[str], status: str = "sent", error_message: str = None) -> None:
+INTERACTION_WEIGHTS = {
+    "like": 1.0,
+    "click": 0.5,
+    "view": 0.2,
+    "dislike": -0.5,
+}
+
+def log_email_sent(profile_id: Optional[str], events_sent: List[str], status: str = "sent", error_message: str = None) -> None:
     """Log email delivery to email_logs table."""
+    if not profile_id:
+        logger.info("Skipping email_logs insert: no profile_id for subscriber.")
+        return
     try:
         log_data = {
-            "user_id": user_id,
+            "user_id": profile_id,
             "status": status,
             "events_sent": events_sent,
             "sent_at": datetime.now(timezone.utc).isoformat(),
@@ -47,26 +58,28 @@ def log_email_sent(user_id: str, events_sent: List[str], status: str = "sent", e
             log_data["error_message"] = error_message
         
         supabase.table("email_logs").insert(log_data).execute()
-        logger.debug(f"Logged email: user={user_id[:8]}..., status={status}")
+        logger.debug(f"Logged email: user={profile_id[:8]}..., status={status}")
     except Exception as e:
         logger.warning(f"Failed to log email: {e}")
 
-def log_probability_distribution(user_id: str) -> None:
+def log_probability_distribution(subscriber_id: Optional[str]) -> None:
     """Log user preference distribution as a simple bar chart."""
+    if not subscriber_id:
+        return
     try:
         resp = (
             supabase.table("user_preferences")
             .select("*")
-            .eq("user_id", user_id)
+            .eq("subscriber_id", subscriber_id)
             .limit(1)
             .execute()
         )
         ensure_ok(resp, action="select user_preferences")
         if not resp.data:
-            logger.info(f"No preference distribution for user {user_id[:8]}...")
+            logger.info(f"No preference distribution for user {subscriber_id[:8]}...")
             return
         prefs = resp.data[0]
-        logger.info(f"Printing probability distribution for user {user_id[:8]}...")
+        logger.info(f"Printing probability distribution for user {subscriber_id[:8]}...")
         bar_scale = 20
         for cat in CATEGORY_COLUMNS:
             try:
@@ -76,7 +89,118 @@ def log_probability_distribution(user_id: str) -> None:
             bar = "#" * max(0, int(round(score * bar_scale)))
             logger.info(f"{cat.ljust(24)} {bar}")
     except Exception as exc:
-        logger.warning(f"Failed to print probability distribution for user {user_id[:8]}...: {exc}")
+        logger.warning(f"Failed to print probability distribution for user {subscriber_id[:8]}...: {exc}")
+
+def ensure_user_preferences(subscriber_id: Optional[str]) -> bool:
+    """Ensure a user_preferences row exists for the subscriber. Returns True if it existed."""
+    if not subscriber_id:
+        return False
+    try:
+        resp = (
+            supabase.table("user_preferences")
+            .select("id")
+            .eq("subscriber_id", subscriber_id)
+            .limit(1)
+            .execute()
+        )
+        ensure_ok(resp, action="select user_preferences")
+        if resp.data:
+            return True
+    except Exception as exc:
+        logger.warning(f"Failed to check user_preferences for {subscriber_id[:8]}...: {exc}")
+        return False
+
+    prefs_payload = {"subscriber_id": subscriber_id}
+    for category in CATEGORY_COLUMNS:
+        prefs_payload[category] = UNIFORM_BASELINE
+    try:
+        supabase.table("user_preferences").insert(prefs_payload).execute()
+        logger.info(f"Created user_preferences for subscriber {subscriber_id[:8]}...")
+    except Exception as exc:
+        logger.warning(f"Could not create user_preferences for {subscriber_id[:8]}...: {exc}")
+    return False
+
+def _decay_multiplier(created_at: Optional[str]) -> float:
+    if not created_at:
+        return 1.0
+    try:
+        ts = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+    except Exception:
+        return 1.0
+    now = datetime.now(timezone.utc)
+    age_days = max(0.0, (now - ts).total_seconds() / 86400)
+    if age_days >= PREFERENCE_DECAY_DAYS:
+        return 0.0
+    return max(0.0, 1.0 - (age_days / PREFERENCE_DECAY_DAYS))
+
+def refresh_preferences_from_interactions(subscriber_id: Optional[str]) -> Optional[Dict[str, float]]:
+    """Recompute preference scores from interactions and persist to user_preferences."""
+    if not subscriber_id:
+        return None
+
+    interactions_resp = (
+        supabase.table("interactions")
+        .select("event_id, interaction_type, created_at")
+        .eq("user_id", subscriber_id)
+        .execute()
+    )
+    ensure_ok(interactions_resp, action="select interactions")
+    interactions = interactions_resp.data or []
+    if not interactions:
+        return None
+
+    event_ids = [i.get("event_id") for i in interactions if i.get("event_id")]
+    if not event_ids:
+        return None
+
+    events_resp = (
+        supabase.table("events")
+        .select("id, category")
+        .in_("id", event_ids)
+        .execute()
+    )
+    ensure_ok(events_resp, action="select events (categories)")
+    event_categories = {e.get("id"): e.get("category") for e in (events_resp.data or [])}
+
+    scores = {cat: UNIFORM_BASELINE for cat in CATEGORY_COLUMNS}
+    for interaction in interactions:
+        event_id = interaction.get("event_id")
+        category = event_categories.get(event_id)
+        if not category or category not in CATEGORY_COLUMNS:
+            continue
+        base_weight = INTERACTION_WEIGHTS.get(interaction.get("interaction_type"), 0.0)
+        if base_weight == 0.0:
+            continue
+        weight = base_weight * _decay_multiplier(interaction.get("created_at"))
+        scores[category] = scores.get(category, UNIFORM_BASELINE) + weight
+
+    for cat in CATEGORY_COLUMNS:
+        scores[cat] = max(0.0, float(scores.get(cat, 0.0)))
+
+    total = sum(scores.values())
+    if total <= 0:
+        scores = {cat: UNIFORM_BASELINE for cat in CATEGORY_COLUMNS}
+        total = sum(scores.values())
+
+    normalized = {cat: scores[cat] / total for cat in CATEGORY_COLUMNS}
+
+    prefs_resp = (
+        supabase.table("user_preferences")
+        .select("id")
+        .eq("subscriber_id", subscriber_id)
+        .limit(1)
+        .execute()
+    )
+    ensure_ok(prefs_resp, action="select user_preferences")
+    if prefs_resp.data:
+        supabase.table("user_preferences").update(normalized).eq("subscriber_id", subscriber_id).execute()
+    else:
+        supabase.table("user_preferences").insert({
+            "subscriber_id": subscriber_id,
+            **normalized,
+        }).execute()
+
+    return normalized
 
 def _parse_event_datetime(value: Any) -> Optional[datetime]:
     if not value:
@@ -152,8 +276,8 @@ def mark_user_onboarded(user: Dict[str, Any]) -> None:
     if not user.get("first_newsletter_sent_at"):
         payload["first_newsletter_sent_at"] = datetime.now(timezone.utc).isoformat()
     try:
-        resp = supabase.table("profiles").update(payload).eq("id", user["id"]).execute()
-        ensure_ok(resp, action="update profile onboarding status")
+        resp = supabase.table("subscribers").update(payload).eq("id", user["id"]).execute()
+        ensure_ok(resp, action="update subscriber onboarding status")
     except Exception as e:
         logger.warning(f"Failed to update onboarding status for user {user.get('id')}: {e}")
 
@@ -223,21 +347,21 @@ def send_phase1_random_newsletter(user: Dict, posts: List[Dict]) -> List[str]:
         sent_ids.append(event_id)
     
     # Generate and send email
-    log_probability_distribution(user["id"])
+    log_probability_distribution(user.get("id"))
     html = generate_personalized_email(user, events, FEEDBACK_BASE_URL)
     subject = f"Phase 1: Discover 9 Events - Tell Us What You Like!"
     
     try:
         logger.info(f"Sending Phase 1 email to {user['email']}")
         send_email(user["email"], subject, html)
-        log_email_sent(user["id"], sent_ids, status="sent")
+        log_email_sent(user.get("profile_id"), sent_ids, status="sent")
     except Exception as e:
-        log_email_sent(user["id"], sent_ids, status="failed", error_message=str(e))
+        log_email_sent(user.get("profile_id"), sent_ids, status="failed", error_message=str(e))
         raise
     
     return sent_ids
 
-def get_user_preferred_categories(user_id: str) -> List[str]:
+def get_user_preferred_categories(subscriber_id: Optional[str]) -> List[str]:
     """
     Get user's top 2 preferred categories based on user_preferences scores.
     
@@ -245,14 +369,17 @@ def get_user_preferred_categories(user_id: str) -> List[str]:
     instead of counting raw interactions. This provides proper personalization.
     """
     # Fetch user's preference scores from user_preferences table
-    resp = supabase.table("user_preferences").select("*").eq("user_id", user_id).limit(1).execute()
+    if not subscriber_id:
+        return ["tech_innovation", "career_networking"]
+
+    resp = supabase.table("user_preferences").select("*").eq("subscriber_id", subscriber_id).limit(1).execute()
     
     if resp.data and len(resp.data) > 0:
         prefs = resp.data[0]
         # Build list of (category, score) tuples
         category_scores = []
         for cat in CATEGORY_COLUMNS:
-            score = prefs.get(cat, 0.077)  # Default uniform baseline
+            score = prefs.get(cat, UNIFORM_BASELINE)  # Default uniform baseline
             category_scores.append((cat, score))
         
         # Sort by score descending and get top 2
@@ -260,12 +387,12 @@ def get_user_preferred_categories(user_id: str) -> List[str]:
         top_cats = [cat for cat, score in category_scores[:2] if score > 0]
         
         # Log for debugging
-        logger.info(f"User {user_id[:8]}... preference scores: {category_scores[:5]}")
+        logger.info(f"User {subscriber_id[:8]}... preference scores: {category_scores[:5]}")
         
         if len(top_cats) >= 2:
             return top_cats[:2]
     else:
-        logger.warning(f"No user_preferences found for user {user_id}, using defaults")
+        logger.warning(f"No user_preferences found for user {subscriber_id}, using defaults")
     
     # Fallback to defaults if no preferences or not enough data
     defaults = ["tech_innovation", "career_networking"]
@@ -333,15 +460,17 @@ def get_exploration_events(posts: List[Dict], exclude_ids: set, preferred_catego
     
     return result
 
-def store_user_top_categories(user_id: str, categories: List[str]) -> None:
+def store_user_top_categories(subscriber_id: Optional[str], categories: List[str]) -> None:
     """
     Store user's top categories in the users table for future reference.
     This allows tracking preference evolution over time.
     """
+    if not subscriber_id:
+        return
     try:
-        supabase.table("profiles").update({
+        supabase.table("subscribers").update({
             "top_categories": categories
-        }).eq("id", user_id).execute()
+        }).eq("id", subscriber_id).execute()
         logger.info(f"Stored top categories: {categories}")
     except Exception as e:
         logger.warning(f"Could not store top categories: {e}")
@@ -349,12 +478,13 @@ def store_user_top_categories(user_id: str, categories: List[str]) -> None:
 
 def send_phase2_preference_newsletter(user: Dict, posts: List[Dict], phase1_ids: List[str]):
     """Phase 2: Send preference-based newsletter with top-2 + random diversity mix."""
-    user_id = user["id"]
-    categories = get_user_preferred_categories(user_id)
+    subscriber_id = user.get("id")
+    refresh_preferences_from_interactions(subscriber_id)
+    categories = get_user_preferred_categories(subscriber_id)
     logger.info(f"User's preferred categories: {categories}")
     
     # Store user's top categories for future reference
-    store_user_top_categories(user_id, categories)
+    store_user_top_categories(user.get("id"), categories)
     
     exclude_ids = set(phase1_ids)  # Don't repeat Phase 1 events
     # Up to 3 from category 1
@@ -388,7 +518,7 @@ def send_phase2_preference_newsletter(user: Dict, posts: List[Dict], phase1_ids:
     selected_events = cat1_events + cat2_events + exploration_events
 
     # Send email
-    log_probability_distribution(user_id)
+    log_probability_distribution(subscriber_id)
     html = generate_personalized_email(user, selected_events, FEEDBACK_BASE_URL)
     subject = f"Phase 2: {len(selected_events)} Events Curated Just For You!"
     
@@ -396,9 +526,9 @@ def send_phase2_preference_newsletter(user: Dict, posts: List[Dict], phase1_ids:
     try:
         logger.info(f"Sending Phase 2 email to {user['email']}")
         send_email(user["email"], subject, html)
-        log_email_sent(user["id"], sent_ids, status="sent")
+        log_email_sent(user.get("profile_id"), sent_ids, status="sent")
     except Exception as e:
-        log_email_sent(user["id"], sent_ids, status="failed", error_message=str(e))
+        log_email_sent(user.get("profile_id"), sent_ids, status="failed", error_message=str(e))
         raise
 """
 Function to run the newsletter flow
@@ -407,20 +537,14 @@ def run_two_phase_newsletter():
     posts = load_posts()
     logger.info(f"Loaded {len(posts)} events from Supabase")
     
-    # Get users
-    users_resp = supabase.table("profiles").select(
-        "id,first_name,last_name,is_new_recipient,first_newsletter_sent_at,is_unsubscribed"
+    # Get subscribers (source of truth for newsletter delivery)
+    users_resp = supabase.table("subscribers").select(
+        "id,profile_id,first_name,last_name,email,is_new_recipient,first_newsletter_sent_at,is_unsubscribed"
     ).execute()
-    ensure_ok(users_resp, action="select profiles")
+    ensure_ok(users_resp, action="select subscribers")
     users = users_resp.data or []
 
-    subscriber_emails = fetch_subscriber_emails([u.get("id") for u in users if u.get("id")])
-    logger.info(f"Loaded subscriber emails: {len(subscriber_emails)} of {len(users)} users")
     for user in users:
-        user_id = user.get("id")
-        subscriber_email = subscriber_emails.get(str(user_id)) if user_id else None
-        if subscriber_email:
-            user["email"] = subscriber_email
         first_name = (user.get("first_name") or "").strip()
         last_name = (user.get("last_name") or "").strip()
         full_name = f"{first_name} {last_name}".strip()
@@ -438,6 +562,10 @@ def run_two_phase_newsletter():
         if is_new_recipient(user):
             new_users.append(user)
         else:
+            if not ensure_user_preferences(user.get("id")):
+                logger.info(f"No preferences found for {user.get('email')}; restarting Phase 1.")
+                new_users.append(user)
+                continue
             returning_users.append(user)
 
     if returning_users:
@@ -467,6 +595,7 @@ def run_two_phase_newsletter():
 
             # Send Phase 1
             try:
+                ensure_user_preferences(user.get("id"))
                 sent_ids = send_phase1_random_newsletter(user, posts)
                 phase1_sent[user["id"]] = sent_ids
                 mark_user_onboarded(user)

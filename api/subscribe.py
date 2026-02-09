@@ -139,7 +139,7 @@ class handler(BaseHTTPRequestHandler):
             if new_user_id:
                 try:
                     # Create user_preferences with uniform baseline scores
-                    prefs_payload = {"user_id": new_user_id}
+                    prefs_payload = {"subscriber_id": new_user_id}
                     for category in CONNECT3_CATEGORIES:
                         prefs_payload[category] = UNIFORM_BASELINE
                     supabase.table("user_preferences").insert(prefs_payload).execute()
