@@ -5,6 +5,7 @@ configuration values used across the codebase.
 """
 
 from .config import get_env
+from .categories import NUM_CATEGORIES as CATEGORY_COUNT
 
 # =============================================================================
 # Scoring & Recommendation Weights
@@ -21,12 +22,12 @@ DECAY_HALF_LIFE_DAYS = 30.0  # Interaction weight halves every 30 days
 # Category Configuration
 # =============================================================================
 
-NUM_CATEGORIES = 13
-DEFAULT_CATEGORY_SCORE = 1.0 / NUM_CATEGORIES  # ~0.077 (uniform probability)
+NUM_CATEGORIES = CATEGORY_COUNT
+DEFAULT_CATEGORY_SCORE = 1.0 / NUM_CATEGORIES  # uniform probability
 
 # Preference score adjustments (from feedback.py)
 PREFERENCE_SCORE_INCREMENT = 0.05  # How much each like/dislike changes score
-PREFERENCE_UNIFORM_BASELINE = 1.0 / NUM_CATEGORIES
+PREFERENCE_UNIFORM_BASELINE = DEFAULT_CATEGORY_SCORE
 
 # =============================================================================
 # Rate Limiting
