@@ -420,6 +420,7 @@ def run_two_phase_newsletter():
     users = users_resp.data or []
 
     subscriber_emails = fetch_subscriber_emails([u.get("id") for u in users if u.get("id")])
+    logger.info(f"Loaded subscriber emails: {len(subscriber_emails)} of {len(users)} users")
     for user in users:
         user_id = user.get("id")
         subscriber_email = subscriber_emails.get(str(user_id)) if user_id else None

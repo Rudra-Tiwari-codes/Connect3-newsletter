@@ -1,4 +1,4 @@
-"""Helpers for accessing newsletter_subscribers data."""
+"""Helpers for accessing subscribers data."""
 
 from typing import Dict, Iterable, Optional
 
@@ -20,7 +20,7 @@ def _try_select_email(
             .execute()
         )
     except Exception as exc:
-        logger.debug(f"newsletter_subscribers select failed for column {column}: {exc}")
+        logger.debug(f"subscribers select failed for column {column}: {exc}")
         return None
 
     emails: Dict[str, str] = {}
@@ -43,7 +43,7 @@ def fetch_subscriber_emails(user_ids: Iterable[str]) -> Dict[str, str]:
         if emails is not None:
             return emails
 
-    logger.warning("Failed to fetch subscriber emails from newsletter_subscribers.")
+    logger.warning("Failed to fetch subscriber emails from subscribers.")
     return {}
 
 
@@ -55,19 +55,19 @@ def fetch_subscriber_email(user_id: str) -> Optional[str]:
     for column in ("user_id", "profile_id", "id"):
         try:
             resp = (
-                supabase.table("newsletter_subscribers")
+                supabase.table("subscribers")
                 .select("email")
                 .eq(column, user_id)
                 .limit(1)
                 .execute()
             )
         except Exception as exc:
-            logger.debug(f"newsletter_subscribers lookup failed for column {column}: {exc}")
+            logger.debug(f"subscribers lookup failed for column {column}: {exc}")
             continue
 
         row = (resp.data or [None])[0]
         if row and row.get("email"):
             return row.get("email")
 
-    logger.warning("Failed to fetch subscriber email from newsletter_subscribers.")
+    logger.warning("Failed to fetch subscriber email from subscribers.")
     return None
