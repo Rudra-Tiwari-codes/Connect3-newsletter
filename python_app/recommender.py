@@ -113,7 +113,7 @@ class TwoTowerRecommender:
       return []
 
     # Exclude events the user already interacted with
-    feedback_resp = supabase.table("interactions").select("event_id").eq("user_id", user_id).execute()
+    feedback_resp = supabase.table("interactions").select("event_id").eq("subscriber_id", user_id).execute()
     ensure_ok(feedback_resp, action="select interactions")
     feedback = feedback_resp.data or []
     exclude_ids = {row["event_id"] for row in feedback if "event_id" in row}

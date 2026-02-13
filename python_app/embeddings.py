@@ -130,7 +130,7 @@ def embed_user(user_id: str, decay_half_life_days: float = 30.0) -> List[float]:
   interactions_resp = (
     supabase.table("interactions")
     .select("event_id, interaction_type, created_at")  # Added created_at for time decay
-    .eq("user_id", user_id)
+    .eq("subscriber_id", user_id)
     .execute()
   )
   ensure_ok(interactions_resp, action="select interactions")

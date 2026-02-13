@@ -213,7 +213,7 @@ def store_interaction(user_id: str, event_id: str, action: str) -> bool:
         existing = (
             supabase.table('interactions')
             .select('id, interaction_type')
-            .eq('user_id', user_id)
+            .eq('subscriber_id', user_id)
             .eq('event_id', event_id)
             .limit(1)
             .execute()
@@ -229,7 +229,7 @@ def store_interaction(user_id: str, event_id: str, action: str) -> bool:
         else:
             # Insert new interaction
             result = supabase.table('interactions').insert({
-                'user_id': user_id,
+                'subscriber_id': user_id,
                 'event_id': event_id,
                 'interaction_type': action
             }).execute()

@@ -50,7 +50,7 @@ def _compute_time_decayed_preferences(
   interactions_resp = (
     supabase.table("interactions")
     .select("event_id, interaction_type, created_at")
-    .eq("user_id", user_id)
+    .eq("subscriber_id", user_id)
     .execute()
   )
   ensure_ok(interactions_resp, action="select interactions")
