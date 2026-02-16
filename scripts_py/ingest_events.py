@@ -1,4 +1,8 @@
-"""Ingest events, generate embeddings, and classify uncategorized events in Supabase."""
+"""Ingest events and classify uncategorized events in Supabase.
+
+Embedding generation is now handled inline via ``python_app.embeddings``; the
+standalone ``embed_events`` script has been removed.
+"""
 
 import sys
 from pathlib import Path
@@ -12,7 +16,6 @@ sys.path.insert(0, str(SCRIPTS_DIR))
 
 from categorize_events import EventClassifier
 from python_app.supabase_client import ensure_ok, supabase
-import embed_events
 import populate_events
 
 
@@ -59,16 +62,11 @@ def verify_status() -> None:
 def main(
   posts_path: Optional[Path] = None,
   populate: bool = False,
-  embed: bool = False,
   verify: bool = False,
-  start_batch: int = 1,
 ) -> None:
   print("Starting event ingestion and classification...")
   try:
     resolved_posts = resolve_posts_path(posts_path)
-    if embed:
-      print(f"Embedding events from {resolved_posts}...")
-      embed_events.main(start_batch=start_batch, posts_path=resolved_posts)
     if populate:
       print(f"Upserting events from {resolved_posts}...")
       populate_events.main(posts_path=resolved_posts)
@@ -107,16 +105,12 @@ if __name__ == "__main__":
 
   parser = argparse.ArgumentParser()
   parser.add_argument("--populate", action="store_true", help="Upsert events from posts JSON")
-  parser.add_argument("--embed", action="store_true", help="Generate embeddings from posts JSON")
   parser.add_argument("--verify", action="store_true", help="Verify embeddings and categories")
   parser.add_argument("--posts", type=Path, help="Path to posts JSON")
-  parser.add_argument("--start-batch", type=int, default=1, help="Batch number for embeddings")
   args = parser.parse_args()
 
   main(
     posts_path=args.posts,
     populate=args.populate,
-    embed=args.embed,
     verify=args.verify,
-    start_batch=args.start_batch,
   )
