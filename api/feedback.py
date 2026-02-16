@@ -8,6 +8,8 @@ Time Decay Policy: Clicks on newsletters older than 15 days
 do NOT update user preferences (prevents stale data from skewing recommendations).
 """
 
+from __future__ import annotations
+
 import json
 import logging
 import os

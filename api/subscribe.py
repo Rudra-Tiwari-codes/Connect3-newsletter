@@ -3,6 +3,8 @@ Vercel Serverless Function for newsletter signups.
 Stores a user in Supabase using server-side credentials.
 """
 
+from __future__ import annotations
+
 import json
 import logging
 import os
@@ -20,7 +22,14 @@ from python_app.supabase_client import supabase
 logger = logging.getLogger(__name__)
 
 USERS_TABLE = "subscribers"
-ALLOWED_ORIGIN = None
+ALLOWED_ORIGIN = os.environ.get("ALLOWED_ORIGIN")
+
+# Permitted origins for CORS — restrict to known frontends
+_PERMITTED_ORIGINS = {
+    "https://connect3.app",
+    "https://www.connect3.app",
+    "https://connect3-newsletter.vercel.app",
+}
 
 EMAIL_PATTERN = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
 
@@ -28,8 +37,13 @@ EMAIL_PATTERN = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
 def _get_allowed_origin(handler: BaseHTTPRequestHandler) -> str:
     if ALLOWED_ORIGIN:
         return ALLOWED_ORIGIN
-    request_origin = handler.headers.get("Origin")
-    return request_origin or "*"
+    request_origin = handler.headers.get("Origin") or ""
+    if request_origin in _PERMITTED_ORIGINS:
+        return request_origin
+    # In development (localhost), allow the request origin
+    if request_origin.startswith("http://localhost"):
+        return request_origin
+    return ""  # deny by omission — browser will block the response
 
 
 def _send_json(handler: BaseHTTPRequestHandler, status: int, payload: dict) -> None:
@@ -150,7 +164,7 @@ class handler(BaseHTTPRequestHandler):
             logger.info("Successfully inserted user: %s", email)
         except Exception as exc:
             logger.error("Signup failed with exception: %s", exc)
-            _send_json(self, 500, {"error": f"Unable to save your details: {str(exc)}"})
+            _send_json(self, 500, {"error": "Unable to save your details right now."})
             return
 
         _send_json(self, 200, {"ok": True})
