@@ -65,7 +65,7 @@ class TestVectorIndexBasics:
         """Wrong dimension raises ValueError."""
         index = VectorIndex(dimension=3)
         
-        with pytest.raises(ValueError, match="dimension mismatch"):
+        with pytest.raises(ValueError, match="Expected dimension"):
             index.add("a", [1.0, 0.0])  # Only 2 dims
 
 

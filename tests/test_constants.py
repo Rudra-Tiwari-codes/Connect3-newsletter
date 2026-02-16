@@ -25,9 +25,10 @@ class TestConstants:
             DEFAULT_CATEGORY_SCORE,
             PREFERENCE_UNIFORM_BASELINE,
         )
+        from python_app.categories import NUM_CATEGORIES as EXPECTED_COUNT
         
-        assert NUM_CATEGORIES == 13
-        assert DEFAULT_CATEGORY_SCORE == pytest.approx(1.0 / 13, rel=1e-3)
+        assert NUM_CATEGORIES == EXPECTED_COUNT
+        assert DEFAULT_CATEGORY_SCORE == pytest.approx(1.0 / EXPECTED_COUNT, rel=1e-3)
         assert PREFERENCE_UNIFORM_BASELINE == DEFAULT_CATEGORY_SCORE
 
     def test_rate_limiting_config(self):

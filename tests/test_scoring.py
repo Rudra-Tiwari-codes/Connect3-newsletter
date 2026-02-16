@@ -33,12 +33,13 @@ class _FakeSupabase:
     self._events = events
 
   def table(self, name):
-    if name == "users":
+    if name == "profiles":
       return _FakeQuery(self._users)
     if name == "user_preferences":
       return _FakeQuery(self._prefs)
     if name == "events":
       return _FakeQuery(self._events)
+    # interactions, event_embeddings — return empty for unit tests
     return _FakeQuery([])
 
 
@@ -69,7 +70,7 @@ def test_rank_events_for_user_prioritizes_preference_and_urgency(monkeypatch):
   ]
   fake = _FakeSupabase(
     users=[{"id": "u1"}],
-    prefs=[{"user_id": "u1", "tech_innovation": 1.0, "sports_fitness": 0.1}],
+    prefs=[{"subscriber_id": "u1", "tech_innovation": 1.0, "sports_fitness": 0.1}],
     events=events,
   )
 

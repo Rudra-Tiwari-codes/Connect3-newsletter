@@ -6,12 +6,12 @@ import pytest
 class TestCategoryConstants:
     """Tests for category constant definitions."""
 
-    def test_has_13_categories(self):
-        """Should have exactly 13 categories."""
+    def test_has_14_categories(self):
+        """Should have exactly 14 categories."""
         from python_app.categories import CONNECT3_CATEGORIES, NUM_CATEGORIES
         
-        assert len(CONNECT3_CATEGORIES) == 13
-        assert NUM_CATEGORIES == 13
+        assert len(CONNECT3_CATEGORIES) == 14
+        assert NUM_CATEGORIES == 14
 
     def test_categories_are_lowercase_underscore(self):
         """All categories should be lowercase with underscores."""
@@ -29,10 +29,10 @@ class TestCategoryConstants:
         assert set(CONNECT3_CATEGORIES) == CONNECT3_CATEGORIES_SET
 
     def test_uniform_baseline_calculation(self):
-        """Uniform baseline should be 1/13."""
+        """Uniform baseline should be 1/NUM_CATEGORIES."""
         from python_app.categories import NUM_CATEGORIES, UNIFORM_BASELINE
         
-        expected = 1.0 / 13
+        expected = 1.0 / NUM_CATEGORIES
         assert UNIFORM_BASELINE == pytest.approx(expected, rel=1e-6)
 
     def test_valid_api_categories_includes_general(self):
@@ -75,12 +75,12 @@ class TestCategoryUsage:
 
     def test_categories_can_be_iterated(self):
         """Categories list should be iterable."""
-        from python_app.categories import CONNECT3_CATEGORIES
+        from python_app.categories import CONNECT3_CATEGORIES, NUM_CATEGORIES
         
         count = 0
         for cat in CONNECT3_CATEGORIES:
             count += 1
-        assert count == 13
+        assert count == NUM_CATEGORIES
 
     def test_category_lookup_is_fast(self):
         """Set lookup should work correctly."""

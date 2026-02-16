@@ -208,9 +208,10 @@ class TestConstants:
     """Tests for scoring constants."""
 
     def test_num_categories(self):
-        """NUM_CATEGORIES equals 13."""
+        """NUM_CATEGORIES matches categories.py count."""
         from python_app.scoring import NUM_CATEGORIES
-        assert NUM_CATEGORIES == 13
+        from python_app.categories import NUM_CATEGORIES as EXPECTED
+        assert NUM_CATEGORIES == EXPECTED
 
     def test_default_category_score_is_uniform(self):
         """DEFAULT_CATEGORY_SCORE is 1/13."""
