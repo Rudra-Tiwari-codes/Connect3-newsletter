@@ -10,13 +10,13 @@ from typing import Any, Dict, List, Optional
 
 from .supabase_client import ensure_ok, supabase
 from .logger import get_logger
-from .categories import CONNECT3_CATEGORIES
+from .categories import CONNECT3_CATEGORIES, NUM_CATEGORIES as _CATEGORY_COUNT
 
 logger = get_logger(__name__)
 
-# 13 categories total - uniform distribution baseline
-NUM_CATEGORIES = 13
-DEFAULT_CATEGORY_SCORE = 1.0 / NUM_CATEGORIES  # ~0.077 (uniform probability)
+# Derive from the single source of truth in categories.py
+NUM_CATEGORIES = _CATEGORY_COUNT
+DEFAULT_CATEGORY_SCORE = 1.0 / NUM_CATEGORIES  # uniform probability
 
 CLUSTER_MATCH_WEIGHT = 50
 MAX_URGENCY_SCORE = 30
@@ -162,7 +162,7 @@ def rank_events_for_user(user_id: str, limit: int = 10) -> List[Dict[str, Any]]:
   if not user_resp.data:
     raise RuntimeError(f"User not found: {user_id}")
 
-  prefs_resp = supabase.table("user_preferences").select("*").eq("user_id", user_id).limit(1).execute()
+  prefs_resp = supabase.table("user_preferences").select("*").eq("subscriber_id", user_id).limit(1).execute()
   ensure_ok(prefs_resp, action="select user_preferences")
   if not prefs_resp.data:
     raise RuntimeError(f"User preferences not found: {user_id}")

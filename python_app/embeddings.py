@@ -182,7 +182,7 @@ def embed_user(user_id: str, decay_half_life_days: float = 30.0) -> List[float]:
       return [v / total for v in vec] if total else vec
 
   # Cold start: preferences text
-  prefs_resp = supabase.table("user_preferences").select("*").eq("user_id", user_id).limit(1).execute()
+  prefs_resp = supabase.table("user_preferences").select("*").eq("subscriber_id", user_id).limit(1).execute()
   ensure_ok(prefs_resp, action="select user_preferences")
   prefs = prefs_resp.data[0] if prefs_resp.data else None
   if prefs:
