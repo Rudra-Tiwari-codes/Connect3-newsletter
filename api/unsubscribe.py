@@ -81,7 +81,15 @@ class handler(BaseHTTPRequestHandler):
                 "is_unsubscribed": True,
                 "unsubscribed_at": datetime.now(timezone.utc).isoformat(),
             }
-            supabase.table("profiles").update(payload).eq("id", user_id).execute()
+            # Update both tables: subscribers is the source of truth for
+            # newsletter delivery; profiles stores profile-level state.
+            supabase.table("subscribers").update(payload).eq("id", user_id).execute()
+            # Also update profiles (best-effort) so the state is consistent
+            try:
+                supabase.table("profiles").update(payload).eq("id", user_id).execute()
+            except Exception:
+                # Non-critical — subscribers table is authoritative
+                logger.debug("Could not update profiles table for user %s", user_id)
         except Exception as exc:
             logger.error(f"Unsubscribe failed for user {user_id}: {exc}")
             _send_plain(self, 500, "An error occurred. Please try again later.")
