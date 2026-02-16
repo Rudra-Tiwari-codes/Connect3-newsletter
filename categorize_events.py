@@ -1,42 +1,48 @@
-"""
-Fallback for uncategorized events. Automatically assign a single, 
-fixed category to uncategorized events in Supabase, 
-using OpenAI first and Gemini as a fallback if OpenAI fails or gives an invalid answer.
+"""Fallback for uncategorized events.
+
+Automatically assign a single, fixed category to uncategorized events in
+Supabase, using OpenAI first and Gemini as a fallback if OpenAI fails or
+gives an invalid answer.
 """
 
-import os
-import requests
 import json
-from supabase import create_client, Client
-from openai import OpenAI
+import logging
+import os
+import sys
+from pathlib import Path
+
+import requests
 from dotenv import load_dotenv
+from openai import OpenAI
+from supabase import Client, create_client
+
+# Allow importing python_app when running as a standalone script
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from python_app.categories import CONNECT3_CATEGORIES
 
 load_dotenv()
 
+logger = logging.getLogger(__name__)
+
 # Initialize Clients
-supabase: Client = create_client(os.environ.get("SUPABASE_URL"), os.environ.get("SUPABASE_KEY"))
+_supabase_url = os.environ.get("SUPABASE_URL")
+_supabase_key = os.environ.get("SUPABASE_KEY") or os.environ.get("SUPABASE_SERVICE_KEY")
+if not _supabase_url or not _supabase_key:
+    logger.warning("Supabase env vars not set — standalone categorize_events will fail.")
+    supabase: Client | None = None
+else:
+    supabase: Client = create_client(_supabase_url, _supabase_key)
+
 openai_client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
-# Gemini Config
+# Gemini Config — key is only included in the request at call time to avoid
+# leaking it in tracebacks or logs at module-load.
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-GEMINI_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
+GEMINI_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
 
-# Define your "Connect3" Categories
-CATEGORIES = [
-    "academic_workshops",
-    "career_networking",
-    "social_cultural",
-    "sports_fitness",
-    "arts_music",
-    "tech_innovation",
-    "volunteering_community",
-    "food_dining",
-    "travel_adventure",
-    "health_wellness",
-    "entrepreneurship",
-    "environment_sustainability",
-    "gaming_esports",
-]
+# Re-use the authoritative categories list from python_app.categories
+CATEGORIES = list(CONNECT3_CATEGORIES)
 
 class EventClassifier:
     def __init__(self):
@@ -73,7 +79,7 @@ def get_category_from_openai(title, description):
         )
         return completion.choices[0].message.content.strip()
     except Exception as e:
-        print(f"❌ OpenAI error: {e}")
+        logger.error("OpenAI classification error: %s", e)
         return None
 
 def get_category_from_gemini(title, description):
@@ -85,26 +91,35 @@ def get_category_from_gemini(title, description):
     data = {"contents": [{"parts": [{"text": prompt}]}]}
     
     try:
-        response = requests.post(GEMINI_URL, headers={"Content-Type": "application/json"}, data=json.dumps(data))
+        response = requests.post(
+            GEMINI_ENDPOINT,
+            headers={"Content-Type": "application/json"},
+            params={"key": GEMINI_API_KEY},
+            data=json.dumps(data),
+        )
         if response.status_code == 200:
             return response.json()['candidates'][0]['content']['parts'][0]['text'].strip()
         else:
-            print(f"❌ Gemini error: {response.status_code} - {response.text[:100]}")
+            logger.error("Gemini error: %d - %s", response.status_code, response.text[:100])
             return None
     except Exception as e:
-        print(f"❌ Gemini exception: {e}")
+        logger.error("Gemini exception: %s", e)
         return None
 
 def categorize_events():
+    if supabase is None:
+        logger.error("Supabase client not available — cannot categorize events.")
+        return
+
     # 1. Fetch events that need a category
     response = supabase.table("events").select("*").is_("category", "null").execute()
     events = response.data
 
     if not events:
-        print("No uncategorized events found.")
+        logger.info("No uncategorized events found.")
         return
 
-    print(f"Found {len(events)} events to categorize...")
+    logger.info("Found %d events to categorize...", len(events))
 
     classifier = EventClassifier()
     classifications = classifier.classify_batch(events)
@@ -114,9 +129,9 @@ def categorize_events():
         new_category = classifications.get(event_id)
         if new_category:
             supabase.table("events").update({"category": new_category}).eq("id", event_id).execute()
-            print(f"✅ Categorized '{event['title']}' as {new_category}")
+            logger.info("Categorized '%s' as %s", event.get('title', event_id), new_category)
         else:
-            print(f"⚠️ Failed to categorize '{event['title']}': Invalid or missing category response.")
+            logger.warning("Failed to categorize '%s': Invalid or missing category response.", event.get('title', event_id))
 
 if __name__ == "__main__":
     categorize_events()
