@@ -349,7 +349,7 @@ def send_phase1_random_newsletter(user: Dict, posts: List[Dict]) -> List[str]:
     # Generate and send email
     log_probability_distribution(user.get("id"))
     html = generate_personalized_email(user, events, FEEDBACK_BASE_URL)
-    subject = f"Phase 1: Discover 9 Events - Tell Us What You Like!"
+    subject = f"Discover {len(events)} Events - Tell Us What You Like!"
     
     try:
         logger.info(f"Sending Phase 1 email to {user['email']}")
@@ -481,6 +481,16 @@ def send_phase2_preference_newsletter(user: Dict, posts: List[Dict], phase1_ids:
     subscriber_id = user.get("id")
     refresh_preferences_from_interactions(subscriber_id)
     categories = get_user_preferred_categories(subscriber_id)
+    if len(categories) < 2:
+        logger.warning("Fewer than 2 preferred categories for user %s; padding with defaults.", subscriber_id)
+        defaults = ["tech_innovation", "career_networking"]
+        while len(categories) < 2:
+            for d in defaults:
+                if d not in categories:
+                    categories.append(d)
+                    break
+            else:
+                break
     logger.info(f"User's preferred categories: {categories}")
     
     # Store user's top categories for future reference
@@ -520,7 +530,7 @@ def send_phase2_preference_newsletter(user: Dict, posts: List[Dict], phase1_ids:
     # Send email
     log_probability_distribution(subscriber_id)
     html = generate_personalized_email(user, selected_events, FEEDBACK_BASE_URL)
-    subject = f"Phase 2: {len(selected_events)} Events Curated Just For You!"
+    subject = f"{len(selected_events)} Events Curated Just For You!"
     
     sent_ids = [e.get("event_id") or e.get("id") for e in selected_events]
     try:
