@@ -102,6 +102,71 @@
         align-items: center;
       }
 
+      .top-nav {
+        position: relative;
+        z-index: 2;
+        width: 100%;
+        padding: 18px 24px;
+        background: rgba(255, 255, 255, 0.65);
+        backdrop-filter: blur(10px);
+        border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+      }
+
+      .nav-inner {
+        max-width: 1120px;
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 24px;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-weight: 600;
+        color: var(--ink-900);
+      }
+
+      .logo-slot {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        border: 1px solid rgba(15, 23, 42, 0.12);
+        background: #fff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+      }
+
+      .logo-slot img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        display: block;
+      }
+
+      .nav-links {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+        flex-wrap: wrap;
+      }
+
+      .nav-links a {
+        color: var(--ink-700);
+        text-decoration: none;
+        font-size: 0.95rem;
+        font-weight: 500;
+        transition: color 150ms ease;
+      }
+
+      .nav-links a:hover {
+        color: var(--ink-900);
+      }
+
       .eyebrow {
         text-transform: uppercase;
         letter-spacing: 0.32em;
@@ -270,6 +335,15 @@
         .field-row {
           grid-template-columns: 1fr;
         }
+
+        .nav-inner {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+
+        .nav-links {
+          gap: 16px;
+        }
       }
 
       @media (prefers-reduced-motion: reduce) {
@@ -285,6 +359,25 @@
       <div class="hero-pattern" aria-hidden="true"></div>
       <div class="bubble one floaty" aria-hidden="true"></div>
       <div class="bubble two floaty" aria-hidden="true"></div>
+
+      <nav class="top-nav">
+        <div class="nav-inner">
+          <div class="brand">
+            <span class="logo-slot">
+              <img
+                src="https://nsjrzxbtxsqmsdgevszv.supabase.co/storage/v1/object/public/newsletter-assets/connect3.png"
+                alt="Connect3 logo"
+              />
+            </span>
+            <span>Connect3</span>
+          </div>
+          <div class="nav-links">
+            <a href="https://ds-cubed.notion.site/c3-privacy" target="_blank" rel="noreferrer">Privacy</a>
+            <a href="https://umsu.unimelb.edu.au/buddy-up/clubs/clubs-listing/join/dscubed/" target="_blank" rel="noreferrer">DSCubed</a>
+            <a href="https://www.uwastudentguild.com/clubs/data-science-club-of-uwa" target="_blank" rel="noreferrer">DSC</a>
+          </div>
+        </div>
+      </nav>
 
       <div class="container">
         <section class="fade-up">

@@ -11,6 +11,7 @@ from .config import get_env
 
 
 UNSUBSCRIBE_TOKEN_SECRET = get_env("UNSUBSCRIBE_TOKEN_SECRET")
+DEFAULT_BANNER_URL = "https://nsjrzxbtxsqmsdgevszv.supabase.co/storage/v1/object/public/newsletter-assets/banner.png"
 
 
 def format_category(category: Optional[str]) -> str:
@@ -119,8 +120,14 @@ def generate_personalized_email(user: Dict[str, Any], events: List[Dict[str, Any
   email_sent_at = datetime.now(timezone.utc).isoformat()
 
   tracking_base = _tracking_base_from_feedback_url(feedback_base_url)
-  banner_url = get_env("NEWSLETTER_BANNER_URL") or f"{tracking_base}/assets/banner.png"
+  banner_url = get_env("NEWSLETTER_BANNER_URL") or DEFAULT_BANNER_URL
   user_id = user.get('id')
+  first_name = _normalize_text(user.get("first_name"))
+  if not first_name:
+    full_name = _normalize_text(user.get("name"))
+    if full_name:
+      first_name = full_name.split(" ", 1)[0]
+  greeting_name = first_name or _normalize_text(user.get("email")) or "there"
 
   unsubscribe_html = ""
   if user_id:
@@ -262,6 +269,12 @@ def generate_personalized_email(user: Dict[str, Any], events: List[Dict[str, Any
       text-decoration: none;
       -ms-interpolation-mode: bicubic;
     }}
+    .banner-img {{
+      width: 100%;
+      max-width: 640px;
+      height: auto;
+      display: block;
+    }}
     @media only screen and (max-width: 600px) {{
       .container {{
         width: 100% !important;
@@ -270,13 +283,18 @@ def generate_personalized_email(user: Dict[str, Any], events: List[Dict[str, Any
         padding: 12px !important;
       }}
       .header {{
-        padding: 16px !important;
+        padding: 0 !important;
       }}
       .header h1 {{
         font-size: 24px !important;
       }}
       .header p {{
         font-size: 14px !important;
+      }}
+      .banner-img {{
+        width: 100% !important;
+        max-width: 100% !important;
+        height: auto !important;
       }}
       .card {{
         padding: 12px !important;
@@ -306,9 +324,21 @@ def generate_personalized_email(user: Dict[str, Any], events: List[Dict[str, Any
             <td class="content" style="padding:24px;">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
                 <tr>
-                  <td class="header" background="{banner_url}" bgcolor="#111827" style="background:#111827 url('{banner_url}') center/cover no-repeat; color:#fff; padding:24px; text-align:center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-                    <h1 style="margin:0; color:#FFFFFF; font-weight:700; font-size: 28px;">Your Weekly Event Picks</h1>
-                    <p style="margin:8px 0 0 0; color:#FFFFFF; font-size: 16px;">Hi {html.escape(user.get('name') or user.get('email') or 'there')}! Here are {len(events)} events picked for you.</p>
+                  <td class="header" bgcolor="#ffffff" style="background:#ffffff; color:#111827; padding:0; text-align:center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+                      <tr>
+                        <td align="center" style="padding:0; text-align:center;">
+                          <img src="{banner_url}" alt="Connect3 Newsletter" width="640" class="banner-img" style="width:100%; max-width:640px; height:auto; display:block; border:0; outline:none; text-decoration:none;" />
+                        </td>
+                      </tr>
+                      <tr>
+                        <td align="center" style="padding:20px 24px 24px; text-align:center;">
+                          <p style="margin:0; color:#4b5563; font-size:16px;">
+                        Hello {html.escape(greeting_name)}, here are a few events happening this month that we think you’ll like.
+                          </p>
+                        </td>
+                      </tr>
+                    </table>
                   </td>
                 </tr>
               </table>
