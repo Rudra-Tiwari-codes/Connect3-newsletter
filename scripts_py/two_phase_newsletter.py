@@ -289,25 +289,40 @@ def build_event_from_post(
 ) -> Dict[str, Any]:
     event_id = post.get("id")
     caption = post.get("caption", "") or ""
-    title = (
-        post.get("title")
+    name = (
+        post.get("name")
+        or post.get("title")
         or caption[:80].split("\n")[0]
         or "Event"
     )
     description = post.get("description") or caption[:200]
-    timestamp = post.get("timestamp") or post.get("event_date") or post.get("date") or post.get("created_at")
-    media_url = post.get("media_url") or post.get("image_url") or post.get("image")
-    permalink = post.get("permalink") or post.get("source_url") or post.get("url")
+    start = (
+        post.get("start")
+        or post.get("event_date")
+        or post.get("timestamp")
+        or post.get("date")
+        or post.get("created_at")
+    )
+    end = post.get("end") or post.get("end_time") or post.get("end_date")
+    thumbnail = post.get("thumbnail") or post.get("media_url") or post.get("image_url") or post.get("image")
+    booking_url = post.get("booking_url") or post.get("permalink") or post.get("source_url") or post.get("url")
     resolved_category = category or post.get("category") or "general"
     event = {
         "event_id": event_id,
         "id": event_id,
-        "title": title,
+        "name": name,
+        "title": name,
         "description": description,
         "category": resolved_category,
-        "timestamp": timestamp,
-        "media_url": media_url,
-        "permalink": permalink,
+        "start": start,
+        "end": end,
+        "timestamp": start,
+        "thumbnail": thumbnail,
+        "media_url": thumbnail,
+        "booking_url": booking_url,
+        "permalink": booking_url,
+        "is_online": post.get("is_online"),
+        "location_id": post.get("location_id"),
     }
     if is_exploration:
         event["is_exploration"] = True

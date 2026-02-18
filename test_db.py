@@ -20,12 +20,12 @@ def init_test():
 
     # 2. Insert a dummy event
     event_data = {
-        "title": "Hackathon 2025", 
+        "name": "Hackathon 2025", 
         "description": "A cool AI hackathon.", 
         "category": None  # Intentionally empty for your AI script later
     }
     event = supabase.table("events").insert(event_data).execute()
-    print(f"Created Event: {event.data[0]['title']}")
+    print(f"Created Event: {event.data[0]['name']}")
 
     print("✅ Database connection successful!")
 

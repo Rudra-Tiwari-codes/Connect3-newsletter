@@ -31,6 +31,87 @@ def _tracking_base_from_feedback_url(feedback_base_url: str) -> str:
   return "https://connect3-newsletter.vercel.app"
 
 
+def _normalize_text(value: Optional[str]) -> str:
+  if not value:
+    return ""
+  return " ".join(str(value).split())
+
+
+def _truncate_text(value: str, max_len: int) -> str:
+  if len(value) <= max_len:
+    return value
+  trimmed = value[:max_len]
+  if " " in trimmed:
+    trimmed = trimmed.rsplit(" ", 1)[0]
+    if not trimmed:
+      trimmed = value[:max_len]
+  return trimmed.rstrip() + "..."
+
+
+def _event_title(evt: Dict[str, Any]) -> str:
+  title = evt.get("name") or evt.get("title")
+  if not title:
+    fallback = evt.get("caption") or evt.get("description") or ""
+    title = fallback.split("\n", 1)[0]
+  title = _normalize_text(title)
+  return title or "Event"
+
+
+def _event_description(evt: Dict[str, Any], max_len: int = 280) -> str:
+  description = evt.get("description") or evt.get("caption") or ""
+  description = _normalize_text(description)
+  if not description:
+    return ""
+  return _truncate_text(description, max_len)
+
+
+def _event_media_url(evt: Dict[str, Any]) -> Optional[str]:
+  return (
+    evt.get("thumbnail")
+    or evt.get("media_url")
+    or evt.get("image_url")
+    or evt.get("image")
+  )
+
+
+def _parse_event_datetime(value: Any) -> Optional[datetime]:
+  if not value:
+    return None
+  if isinstance(value, datetime):
+    return value if value.tzinfo else value.replace(tzinfo=timezone.utc)
+  if isinstance(value, str):
+    try:
+      parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except Exception:
+      return None
+    if parsed.tzinfo is None:
+      return parsed.replace(tzinfo=timezone.utc)
+    return parsed
+  return None
+
+
+def _event_time_range(evt: Dict[str, Any]) -> tuple[Optional[datetime], Optional[datetime], Optional[str], Optional[str]]:
+  start_raw = (
+    evt.get("start")
+    or evt.get("event_date")
+    or evt.get("timestamp")
+    or evt.get("date")
+    or evt.get("created_at")
+  )
+  end_raw = evt.get("end") or evt.get("end_time") or evt.get("end_date")
+  return _parse_event_datetime(start_raw), _parse_event_datetime(end_raw), start_raw, end_raw
+
+
+def _event_location(evt: Dict[str, Any]) -> str:
+  if evt.get("is_online") is True:
+    return "Online"
+  for key in ("location", "location_name", "venue", "address"):
+    value = evt.get(key)
+    if value:
+      return str(value)
+  return "TBA"
+
+
 def generate_personalized_email(user: Dict[str, Any], events: List[Dict[str, Any]], feedback_base_url: str) -> str:
   cards = []
   
@@ -52,10 +133,10 @@ def generate_personalized_email(user: Dict[str, Any], events: List[Dict[str, Any
   
   for i, evt in enumerate(events):
     # Escape user content for safety
-    title = html.escape(evt.get('title', 'Event'))
-    description = html.escape(evt.get('description', ''))
-    location = html.escape(evt.get('location', 'TBA'))
-    media_url = evt.get('media_url')
+    title = html.escape(_event_title(evt))
+    description = html.escape(_event_description(evt))
+    location = html.escape(_event_location(evt))
+    media_url = _event_media_url(evt)
 
     media_html = ""
     if media_url:
@@ -66,13 +147,21 @@ def generate_personalized_email(user: Dict[str, Any], events: List[Dict[str, Any
         'border-radius: 8px; display:block; margin-bottom: 10px; border:0; outline:none; text-decoration:none;" />'
       )
     
-    when = evt.get("event_date") or evt.get("timestamp")
     when_str = ""
-    try:
-      when_dt = datetime.fromisoformat(when.replace("Z", "+00:00")) if when else None
-      when_str = when_dt.strftime("%B %d, %Y at %I:%M %p") if when_dt else ""
-    except Exception:
-      when_str = when or ""
+    start_dt, end_dt, start_raw, end_raw = _event_time_range(evt)
+    if start_dt and end_dt:
+      if start_dt.date() == end_dt.date():
+        when_str = f"{start_dt.strftime('%B %d, %Y at %I:%M %p')} - {end_dt.strftime('%I:%M %p')}"
+      else:
+        when_str = f"{start_dt.strftime('%B %d, %Y at %I:%M %p')} - {end_dt.strftime('%B %d, %Y at %I:%M %p')}"
+    elif start_dt:
+      when_str = start_dt.strftime("%B %d, %Y at %I:%M %p")
+    elif end_dt:
+      when_str = end_dt.strftime("%B %d, %Y at %I:%M %p")
+    else:
+      when_str = start_raw or end_raw or ""
+    if not when_str:
+      when_str = "TBA"
     
     # Build tracking URLs - goes to tracking API which stores click then redirects to connect3.app
     # Recommender returns 'event_id', all_posts.json uses 'id'

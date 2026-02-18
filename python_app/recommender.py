@@ -186,7 +186,9 @@ class TwoTowerRecommender:
         continue
 
       event_date = _parse_date(
-        event.get("event_date")
+        event.get("start")
+        or event.get("end")
+        or event.get("event_date")
         or event.get("timestamp")
         or event.get("date")
         or event.get("created_at")
@@ -208,14 +210,24 @@ class TwoTowerRecommender:
         - diversity_penalty
       )
 
+      description = event.get("description") or event.get("caption") or ""
+      title = event.get("name") or event.get("title") or self._extract_title(description)
       recommendation = {
         "event_id": event_id,
-        "title": event.get("title") or self._extract_title(event.get("caption") or event.get("description") or ""),
-        "caption": event.get("caption") or event.get("description") or "",
-        "timestamp": event.get("timestamp") or event.get("event_date") or event.get("date"),
-        "permalink": event.get("permalink") or event.get("source_url") or event.get("url"),
-        "media_url": event.get("media_url") or event.get("image_url") or event.get("image") or "",
+        "name": event.get("name") or title,
+        "title": title,
+        "description": description,
+        "caption": description,
+        "start": event.get("start") or event.get("event_date") or event.get("timestamp") or event.get("date"),
+        "end": event.get("end"),
+        "timestamp": event.get("start") or event.get("event_date") or event.get("timestamp") or event.get("date"),
+        "booking_url": event.get("booking_url") or event.get("permalink") or event.get("source_url") or event.get("url"),
+        "permalink": event.get("booking_url") or event.get("permalink") or event.get("source_url") or event.get("url"),
+        "thumbnail": event.get("thumbnail") or event.get("media_url") or event.get("image_url") or event.get("image") or "",
+        "media_url": event.get("thumbnail") or event.get("media_url") or event.get("image_url") or event.get("image") or "",
         "category": event.get("category"),
+        "is_online": event.get("is_online"),
+        "location_id": event.get("location_id"),
         "similarity_score": candidate["score"],
         "recency_score": recency_score,
         "final_score": final_score,

@@ -62,7 +62,7 @@ class EventClassifier:
     def classify_batch(self, events):
         classifications = {}
         for event in events:
-            title = event.get("title") or ""
+            title = event.get("name") or event.get("title") or ""
             description = event.get("description") or ""
             category = self.classify_event(title, description)
             if category:
@@ -129,9 +129,9 @@ def categorize_events():
         new_category = classifications.get(event_id)
         if new_category:
             supabase.table("events").update({"category": new_category}).eq("id", event_id).execute()
-            logger.info("Categorized '%s' as %s", event.get('title', event_id), new_category)
+            logger.info("Categorized '%s' as %s", event.get('name', event_id), new_category)
         else:
-            logger.warning("Failed to categorize '%s': Invalid or missing category response.", event.get('title', event_id))
+            logger.warning("Failed to categorize '%s': Invalid or missing category response.", event.get('name', event_id))
 
 if __name__ == "__main__":
     categorize_events()

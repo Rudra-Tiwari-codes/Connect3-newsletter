@@ -35,11 +35,12 @@ def main(posts_path: Path = None) -> None:
         event_id = str(post['id'])
         event = {
             'id': event_id,
-            'title': caption[:80].split('\n')[0] if caption else 'Event',
+            'name': caption[:80].split('\n')[0] if caption else 'Event',
             'description': caption[:500] if caption else '',
-            'date': post.get('event_date') or post.get('timestamp'),
+            'start': post.get('event_date') or post.get('timestamp') or post.get('date'),
             'category': cat_map.get(event_id) or post.get('category'),
-            'image_url': post.get('media_url'),
+            'thumbnail': post.get('media_url') or post.get('image_url') or post.get('image'),
+            'booking_url': post.get('permalink') or post.get('source_url') or post.get('url'),
         }
         events.append(event)
     

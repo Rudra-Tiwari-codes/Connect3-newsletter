@@ -23,11 +23,24 @@ MAX_URGENCY_SCORE = 30
 DECAY_HALF_LIFE_DAYS = 30.0  # Interaction weight halves every 30 days
 
 
-def _parse_date(value: str) -> Optional[datetime]:
+def _parse_date(value: Optional[str]) -> Optional[datetime]:
+  if not value:
+    return None
   try:
     return datetime.fromisoformat(value.replace("Z", "+00:00"))
   except Exception:
     return None
+
+
+def _event_start_value(event: Dict[str, Any]) -> Optional[str]:
+  return (
+    event.get("start")
+    or event.get("event_date")
+    or event.get("timestamp")
+    or event.get("date")
+    or event.get("created_at")
+    or event.get("end")
+  )
 
 
 def _compute_time_decayed_preferences(
@@ -148,7 +161,7 @@ def _cluster_match(event: Dict[str, Any], prefs: Dict[str, Any], decayed_prefs: 
 
 
 def _urgency_score(event: Dict[str, Any]) -> float:
-  event_date = _parse_date(event.get("event_date") or event.get("timestamp") or "")
+  event_date = _parse_date(_event_start_value(event))
   if not event_date:
     return 0.0
   now = datetime.now(timezone.utc)
@@ -174,8 +187,8 @@ def rank_events_for_user(user_id: str, limit: int = 10) -> List[Dict[str, Any]]:
   events_resp = (
     supabase.table("events")
     .select("*")
-    .gte("event_date", datetime.now(timezone.utc).isoformat())
-    .order("event_date", desc=False)
+    .gte("start", datetime.now(timezone.utc).isoformat())
+    .order("start", desc=False)
     .limit(100)
     .execute()
   )
