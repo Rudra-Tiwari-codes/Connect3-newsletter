@@ -334,7 +334,7 @@ def generate_personalized_email(user: Dict[str, Any], events: List[Dict[str, Any
                       <tr>
                         <td align="center" style="padding:20px 24px 24px; text-align:center;">
                           <p style="margin:0; color:#4b5563; font-size:16px;">
-                        Hello {html.escape(greeting_name)}, here are a few events happening this month that we think you’ll like.
+                        Hello {html.escape(greeting_name)}, here are {len(events)} events happening this month that we think you’ll like.
                           </p>
                         </td>
                       </tr>
