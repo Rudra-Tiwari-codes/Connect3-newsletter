@@ -27,7 +27,7 @@ from pathlib import Path
 # Add parent directory to path for python_app imports in Vercel serverless
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from python_app.supabase_client import supabase
+from python_app.supabase_client import supabase, ensure_ok
 from python_app.categories import CONNECT3_CATEGORIES, UNIFORM_BASELINE
 
 # Configure logging
@@ -221,20 +221,24 @@ def store_interaction(user_id: str, event_id: str, action: str) -> bool:
             .execute()
         )
         
+        now_iso = datetime.now(timezone.utc).isoformat()
         if existing.data:
-            # Update existing interaction if action changed
-            if existing.data[0].get('interaction_type') != action:
-                result = supabase.table('interactions').update({
-                    'interaction_type': action
-                }).eq('id', existing.data[0]['id']).execute()
-                logger.info(f"Updated interaction: user={user_id[:8]}..., event={event_id}, action={action}, result={result}")
+            # Refresh the interaction timestamp so recency reflects latest engagement.
+            result = supabase.table('interactions').update({
+                'interaction_type': action,
+                'created_at': now_iso,
+            }).eq('id', existing.data[0]['id']).execute()
+            ensure_ok(result, action="update interactions")
+            logger.info(f"Updated interaction: user={user_id[:8]}..., event={event_id}, action={action}, result={result}")
         else:
             # Insert new interaction
             result = supabase.table('interactions').insert({
                 'subscriber_id': user_id,
                 'event_id': event_id,
-                'interaction_type': action
+                'interaction_type': action,
+                'created_at': now_iso,
             }).execute()
+            ensure_ok(result, action="insert interactions")
             logger.info(f"Created interaction: user={user_id[:8]}..., event={event_id}, action={action}, result_data={result.data}")
         
         return True
@@ -277,9 +281,10 @@ def update_preferences(user_id: str, category: str, action: str) -> None:
             .execute()
         )
         
+        effective_action = "like" if action == "click" else action
         if prefs.data:
             current_score = coerce_score(prefs.data[0].get(category), UNIFORM_BASELINE)
-            if action == 'like':
+            if effective_action == 'like':
                 new_score = min(1.0, current_score + SCORE_INCREMENT)
             else:
                 new_score = max(0.0, current_score - SCORE_INCREMENT)
@@ -303,7 +308,7 @@ def update_preferences(user_id: str, category: str, action: str) -> None:
             pref_scores = {cat: UNIFORM_BASELINE for cat in ALL_CATEGORIES}
             
             # Adjust the interacted category based on action
-            if action == 'like':
+            if effective_action == 'like':
                 pref_scores[category] = UNIFORM_BASELINE + 0.1
             else:
                 pref_scores[category] = max(0.0, UNIFORM_BASELINE - SCORE_INCREMENT)

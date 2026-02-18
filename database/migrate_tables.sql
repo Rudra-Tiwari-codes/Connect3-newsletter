@@ -19,7 +19,7 @@ CHECK (interaction_type IN ('like', 'dislike', 'click', 'view'));
 -- ============================================
 -- 1. events (id: int8, title, description, date, category, image_url, created_at)
 -- 2. users (id: uuid, email, name, preferences, top_categories, created_at)
--- 3. interactions (id, user_id, event_id, interaction_type, created_at)
+-- 3. interactions (id, subscriber_id, event_id, interaction_type, created_at)
 
 -- ============================================
 -- ADD MISSING COLUMNS TO USERS TABLE
@@ -122,7 +122,7 @@ CREATE POLICY "Service role delete event_embeddings" ON public.event_embeddings
 -- Defaults to uniform distribution: 1/13 ≈ 0.077 per category
 CREATE TABLE IF NOT EXISTS public.user_preferences (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
+    subscriber_id UUID REFERENCES public.subscribers(id) ON DELETE CASCADE,
     tech_innovation FLOAT DEFAULT 0.077,
     career_networking FLOAT DEFAULT 0.077,
     academic_workshops FLOAT DEFAULT 0.077,
@@ -138,15 +138,15 @@ CREATE TABLE IF NOT EXISTS public.user_preferences (
     gaming_esports FLOAT DEFAULT 0.077,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
-    UNIQUE(user_id)
+    UNIQUE(subscriber_id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_user_preferences_user_id ON public.user_preferences(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_preferences_subscriber_id ON public.user_preferences(subscriber_id);
 
 ALTER TABLE public.user_preferences ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Users can view own preferences" ON public.user_preferences
-    FOR SELECT USING (auth.uid() = user_id);
+    FOR SELECT USING (auth.uid() = subscriber_id);
 
 CREATE POLICY "Service role insert user_preferences" ON public.user_preferences
     FOR INSERT WITH CHECK (current_setting('request.jwt.claims', true)::json->>'role' = 'service_role');

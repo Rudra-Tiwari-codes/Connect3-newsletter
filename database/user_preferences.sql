@@ -2,7 +2,7 @@
 
 CREATE TABLE IF NOT EXISTS public.user_preferences (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+    subscriber_id UUID REFERENCES public.subscribers(id) ON DELETE CASCADE,
     academic_workshops DOUBLE PRECISION DEFAULT 0.0714,
     arts_music DOUBLE PRECISION DEFAULT 0.0714,
     career_networking DOUBLE PRECISION DEFAULT 0.0714,
@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS public.user_preferences (
     recruitment DOUBLE PRECISION DEFAULT 0.0714,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
-    UNIQUE(user_id)
+    UNIQUE(subscriber_id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_user_preferences_user_id ON public.user_preferences(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_preferences_subscriber_id ON public.user_preferences(subscriber_id);
