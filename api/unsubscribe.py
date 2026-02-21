@@ -112,7 +112,7 @@ class handler(BaseHTTPRequestHandler):
   <body style="margin:0; padding:24px; font-family:Arial, sans-serif; background:#f9fafb; color:#111827;">
     <div style="max-width:520px; margin:0 auto; background:#fff; padding:24px; border-radius:10px; border:1px solid #e5e7eb;">
       <h1 style="margin:0 0 12px 0; font-size:20px;">You're unsubscribed</h1>
-      <p style="margin:0; color:#4b5563;">You will no longer receive Connect3 newsletters.</p>
+      <p style="margin:0; color:#4b5563;">Sorry to see you go :( You will no longer receive Connect3 newsletters.</p>
     </div>
   </body>
 </html>

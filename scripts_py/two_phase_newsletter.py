@@ -28,7 +28,7 @@ from python_app.config import get_env
 logger = get_logger(__name__)
 
 # Base URL for feedback links (configurable for local dev)
-SITE_URL = get_env("NEXT_PUBLIC_SITE_URL") or get_env("NEXT_PUBLIC_APP_URL") or "https://connect3-newsletter.vercel.app"
+SITE_URL = get_env("NEXT_PUBLIC_SITE_URL") or get_env("NEXT_PUBLIC_APP_URL")
 FEEDBACK_BASE_URL = f"{SITE_URL.rstrip('/')}/feedback"
 DEFAULT_PHASE2_TOTAL = 9
 MAX_EVENT_LOOKAHEAD_DAYS = 30
