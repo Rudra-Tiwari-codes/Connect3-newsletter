@@ -376,42 +376,44 @@ def send_phase1_random_newsletter(user: Dict, posts: List[Dict]) -> List[str]:
     
     return sent_ids
 
-def get_user_preferred_categories(subscriber_id: Optional[str]) -> List[str]:
+def get_ranked_user_categories(subscriber_id: Optional[str]) -> List[tuple[str, float]]:
     """
-    Get user's top 2 preferred categories based on user_preferences scores.
-    
-    Uses the stored preference scores (updated by clicks via feedback.py)
-    instead of counting raw interactions. This provides proper personalization.
+    Return all categories ranked by preference score (highest first).
+    Falls back to uniform scores if preferences are missing.
     """
-    # Fetch user's preference scores from user_preferences table
     if not subscriber_id:
-        return ["tech_innovation", "career_networking"]
+        return [(cat, UNIFORM_BASELINE) for cat in CATEGORY_COLUMNS]
 
     resp = supabase.table("user_preferences").select("*").eq("subscriber_id", subscriber_id).limit(1).execute()
-    
+
     if resp.data and len(resp.data) > 0:
         prefs = resp.data[0]
-        # Build list of (category, score) tuples
         category_scores = []
-        for cat in CATEGORY_COLUMNS:
-            score = prefs.get(cat, UNIFORM_BASELINE)  # Default uniform baseline
-            category_scores.append((cat, score))
-        
-        # Sort by score descending and get top 2
-        category_scores.sort(key=lambda x: x[1], reverse=True)
-        top_cats = [cat for cat, score in category_scores[:2] if score > 0]
-        
-        # Log for debugging
-        logger.info(f"User {subscriber_id[:8]}... preference scores: {category_scores[:5]}")
-        
-        if len(top_cats) >= 2:
-            return top_cats[:2]
-    else:
-        logger.warning(f"No user_preferences found for user {subscriber_id}, using defaults")
-    
-    # Fallback to defaults if no preferences or not enough data
-    defaults = ["tech_innovation", "career_networking"]
-    return defaults[:2]
+        for idx, cat in enumerate(CATEGORY_COLUMNS):
+            raw_score = prefs.get(cat, UNIFORM_BASELINE)
+            try:
+                score = float(raw_score)
+            except (TypeError, ValueError):
+                score = UNIFORM_BASELINE
+            category_scores.append((cat, score, idx))
+
+        # Sort by score desc, then stable by original category order
+        category_scores.sort(key=lambda x: (-x[1], x[2]))
+        ranked = [(cat, score) for cat, score, _ in category_scores]
+        logger.info(f"User {subscriber_id[:8]}... preference scores: {ranked[:5]}")
+        return ranked
+
+    logger.warning(f"No user_preferences found for user {subscriber_id}, using uniform defaults")
+    return [(cat, UNIFORM_BASELINE) for cat in CATEGORY_COLUMNS]
+
+def _category_has_events(posts: List[Dict[str, Any]], category: str, exclude_ids: set) -> bool:
+    for post in posts:
+        event_id = post.get("id")
+        if event_id in exclude_ids:
+            continue
+        if _resolve_category(post) == category:
+            return True
+    return False
 
 def get_events_by_category(posts: List[Dict], category: str, exclude_ids: set, limit: int) -> List[Dict]:
     """Get events matching a specific category"""
@@ -495,50 +497,76 @@ def send_phase2_preference_newsletter(user: Dict, posts: List[Dict], phase1_ids:
     """Phase 2: Send preference-based newsletter with top-2 + random diversity mix."""
     subscriber_id = user.get("id")
     refresh_preferences_from_interactions(subscriber_id)
-    categories = get_user_preferred_categories(subscriber_id)
-    if len(categories) < 2:
-        logger.warning("Fewer than 2 preferred categories for user %s; padding with defaults.", subscriber_id)
+    ranked_categories = get_ranked_user_categories(subscriber_id)
+    ranked_only = [cat for cat, _score in ranked_categories]
+    exclude_ids = set(phase1_ids)  # Don't repeat Phase 1 events
+
+    # Choose top 2 categories by preference that actually have events
+    selected_categories: List[str] = []
+    for cat in ranked_only:
+        if _category_has_events(posts, cat, exclude_ids):
+            selected_categories.append(cat)
+        if len(selected_categories) >= 2:
+            break
+
+    if len(selected_categories) < 2:
+        logger.warning("Fewer than 2 preferred categories with events for user %s; padding with defaults.", subscriber_id)
         defaults = ["tech_innovation", "career_networking"]
-        while len(categories) < 2:
-            for d in defaults:
-                if d not in categories:
-                    categories.append(d)
-                    break
-            else:
+        for d in defaults:
+            if len(selected_categories) >= 2:
                 break
-    logger.info(f"User's preferred categories: {categories}")
+            if d in selected_categories:
+                continue
+            if _category_has_events(posts, d, exclude_ids):
+                selected_categories.append(d)
+
+    if len(selected_categories) < 2:
+        for cat in CATEGORY_COLUMNS:
+            if len(selected_categories) >= 2:
+                break
+            if cat in selected_categories:
+                continue
+            if _category_has_events(posts, cat, exclude_ids):
+                selected_categories.append(cat)
+
+    logger.info(f"User's preferred categories (with events): {selected_categories}")
     
     # Store user's top categories for future reference
-    store_user_top_categories(user.get("id"), categories)
+    store_user_top_categories(user.get("id"), selected_categories)
     
-    exclude_ids = set(phase1_ids)  # Don't repeat Phase 1 events
     # Up to 3 from category 1
-    cat1_events = get_events_by_category(posts, categories[0], exclude_ids, 3)
-    logger.debug(f"{len(cat1_events)} from {categories[0]}")
+    if len(selected_categories) >= 1:
+        cat1_events = get_events_by_category(posts, selected_categories[0], exclude_ids, 3)
+        logger.debug(f"{len(cat1_events)} from {selected_categories[0]}")
+    else:
+        cat1_events = []
     
     # Up to 3 from category 2
-    cat2_events = get_events_by_category(posts, categories[1], exclude_ids, 3)
-    logger.debug(f"{len(cat2_events)} from {categories[1]}")
+    if len(selected_categories) >= 2:
+        cat2_events = get_events_by_category(posts, selected_categories[1], exclude_ids, 3)
+        logger.debug(f"{len(cat2_events)} from {selected_categories[1]}")
+    else:
+        cat2_events = []
     
     # Fill remaining slots with random valid events for diversity
     remaining = DEFAULT_PHASE2_TOTAL - (len(cat1_events) + len(cat2_events))
-    exploration_events = get_exploration_events(posts, exclude_ids, categories, remaining)
+    exploration_events = get_exploration_events(posts, exclude_ids, selected_categories, remaining)
     exploration_cats = [e.get('category', 'unknown') for e in exploration_events]
     logger.debug(f"{len(exploration_events)} exploration from: {exploration_cats}")
 
     _annotate_group_header(
         cat1_events,
-        format_category(categories[0]),
+        format_category(selected_categories[0]) if selected_categories else "Events You May Like",
         action_label="See less of this category",
-        action_category=categories[0],
+        action_category=selected_categories[0] if selected_categories else None,
     )
     _annotate_group_header(
         cat2_events,
-        format_category(categories[1]),
+        format_category(selected_categories[1]) if len(selected_categories) >= 2 else "More Events",
         action_label="See less of this category",
-        action_category=categories[1],
+        action_category=selected_categories[1] if len(selected_categories) >= 2 else None,
     )
-    _annotate_group_header(exploration_events, "Some more events")
+    _annotate_group_header(exploration_events, "See more events")
 
     selected_events = cat1_events + cat2_events + exploration_events
 

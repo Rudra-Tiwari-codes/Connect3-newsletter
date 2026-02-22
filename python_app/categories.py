@@ -37,21 +37,3 @@ UNIFORM_BASELINE: float = 1.0 / NUM_CATEGORIES
 
 # Categories valid for API validation (includes 'general' fallback)
 VALID_API_CATEGORIES: FrozenSet[str] = CONNECT3_CATEGORIES_SET | {"general"}
-
-# Mapping from category to descriptive text for embedding generation
-CATEGORY_DESCRIPTIONS: dict[str, str] = {
-    "academic_workshops": "academic workshops, revision sessions, study groups",
-    "arts_music": "arts, music, creative performances, exhibitions",
-    "career_networking": "career development, networking, industry connections",
-    "entrepreneurship": "startups, entrepreneurship, business",
-    "environment_sustainability": "environment, sustainability, green initiatives, climate",
-    "food_dining": "food, dining, cooking, culinary experiences",
-    "gaming_esports": "gaming, esports, video games, tournaments",
-    "health_wellness": "health, wellness, mental health, self-care",
-    "social_cultural": "social events, parties, cultural activities",
-    "sports_fitness": "sports, fitness, physical activities",
-    "tech_innovation": "technology, AI, machine learning, coding",
-    "travel_adventure": "travel, adventure, outdoor activities, exploration",
-    "volunteering_community": "volunteering, community service, charity events",
-    "recruitment": "recruitment, hiring, job fairs, talent acquisition",
-}

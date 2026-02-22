@@ -11,7 +11,7 @@ from .config import get_env
 
 
 UNSUBSCRIBE_TOKEN_SECRET = get_env("UNSUBSCRIBE_TOKEN_SECRET")
-DEFAULT_BANNER_URL = "https://nsjrzxbtxsqmsdgevszv.supabase.co/storage/v1/object/public/newsletter-assets/banner.png"
+DEFAULT_BANNER_URL = "https://nsjrzxbtxsqmsdgevszv.supabase.co/storage/v1/object/public/newsletter-assets/banner1.png"
 
 
 def format_category(category: Optional[str]) -> str:

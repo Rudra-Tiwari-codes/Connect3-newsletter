@@ -114,8 +114,3 @@ class EmailDeliveryService:
       except Exception as log_exc:
         logger.warning(f"Failed to log email failure for user {user_id}: {log_exc}")
       raise
-
-  def send_test_email(self, to_email: str) -> None:
-    html = "<h1>Test Email</h1><p>This is a test email from the Event Newsletter System.</p>"
-    send_email(to_email, "Test Email - Event Newsletter System", html)
-    logger.info(f"Test email sent to {to_email}")
